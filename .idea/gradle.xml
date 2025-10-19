@@ -12,6 +12,8 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/MqttAndroidClient" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/cs710aquickstart" />
+            <option value="$PROJECT_DIR$/csl-rfid-android-sdk" />
             <option value="$PROJECT_DIR$/cslibrary4a" />
             <option value="$PROJECT_DIR$/epctagcoder" />
           </set>

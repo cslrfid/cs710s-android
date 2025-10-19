@@ -2,6 +2,8 @@ include ':app'
 include ':cslibrary4a'
 include ':epctagcoder'
 include ':MqttAndroidClient'
+include ':csl-rfid-android-sdk'
+include ':cs710aquickstart'
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
