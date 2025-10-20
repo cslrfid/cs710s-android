@@ -184,9 +184,11 @@ public class RfidGeigerManager {
                 // Target tag found (only the selected tag will be returned during search)
                 if (tagData.decodedError == null) {
                     readCount++;
-                    currentRssi = tagData.decodedRssi;
+                    // RSSI: SDK returns positive values when rssiDisplaySetting=1 (dBm mode)
+                    // True dBm values are negative, so we negate to get proper dBm format
+                    currentRssi = -Math.abs(tagData.decodedRssi);
 
-                    // Update peak RSSI
+                    // Update peak RSSI (highest = least negative = closest)
                     if (currentRssi > peakRssi) {
                         peakRssi = currentRssi;
                     }

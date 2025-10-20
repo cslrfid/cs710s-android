@@ -4,12 +4,17 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
+import com.csl.rfidsdk.callbacks.RfidConfigurationCallback;
 import com.csl.rfidsdk.callbacks.RfidConnectionCallback;
 import com.csl.rfidsdk.callbacks.RfidGeigerCallback;
 import com.csl.rfidsdk.callbacks.RfidInventoryCallback;
 import com.csl.rfidsdk.callbacks.RfidScanCallback;
+import com.csl.rfidsdk.config.RfidInventoryMode;
+import com.csl.rfidsdk.config.RfidRegion;
+import com.csl.rfidsdk.config.RfidTarget;
 import com.csl.rfidsdk.internal.SdkBridge;
 import com.csl.rfidsdk.internal.ThreadManager;
+import com.csl.rfidsdk.managers.RfidConfigurationManager;
 import com.csl.rfidsdk.managers.RfidConnectionManager;
 import com.csl.rfidsdk.managers.RfidGeigerManager;
 import com.csl.rfidsdk.managers.RfidInventoryManager;
@@ -31,6 +36,7 @@ public class RfidManager {
     private RfidConnectionManager connectionManager;  // Lazy initialized
     private RfidInventoryManager inventoryManager;  // Lazy initialized
     private RfidGeigerManager geigerManager;  // Lazy initialized
+    private RfidConfigurationManager configurationManager;  // Lazy initialized
     private final RfidManagerBuilder.LoggerCallback logger;
     private final boolean autoReconnect;
     private volatile boolean initialized = false;
@@ -128,6 +134,7 @@ public class RfidManager {
         this.connectionManager = new RfidConnectionManager(sdkBridge, threadManager, logger);
         this.inventoryManager = new RfidInventoryManager(sdkBridge, threadManager, logger);
         this.geigerManager = new RfidGeigerManager(sdkBridge, threadManager, logger);
+        this.configurationManager = new RfidConfigurationManager(sdkBridge, threadManager, logger);
 
         initialized = true;
         log("SDK initialized successfully");
@@ -211,21 +218,14 @@ public class RfidManager {
     }
 
     /**
-     * Apply a configuration
-     * Package-private, called by ConfigurationBuilder
+     * Get the current configuration
      */
-    void applyConfiguration(RfidConfiguration configuration) {
-        this.currentConfiguration = configuration;
-        log("Configuration applied: power=" + configuration.getPowerLevel() +
-                ", session=" + configuration.getSession());
-        if (initialized) {
-            inventoryManager.applyConfiguration(configuration);
-            geigerManager.applyConfiguration(configuration);
-        }
+    public RfidConfiguration getConfiguration() {
+        return currentConfiguration;
     }
 
     /**
-     * Get the current configuration
+     * Get the current configuration (alias for getConfiguration)
      */
     public RfidConfiguration getCurrentConfiguration() {
         return currentConfiguration;
@@ -320,6 +320,7 @@ public class RfidManager {
 
     /**
      * Configuration builder for fluent API
+     * Implements the API from rfid-wrapper-proposal.md section 3.4
      */
     public static class ConfigurationBuilder {
         private final RfidManager manager;
@@ -336,7 +337,9 @@ public class RfidManager {
                     .region(currentConfig.getRegion())
                     .populateRssi(currentConfig.isPopulateRssi())
                     .populatePhase(currentConfig.isPopulatePhase())
-                    .populateChannel(currentConfig.isPopulateChannel());
+                    .populateChannel(currentConfig.isPopulateChannel())
+                    .enableBeep(currentConfig.isEnableBeep())
+                    .enableVibrate(currentConfig.isEnableVibrate());
         }
 
         public ConfigurationBuilder powerLevel(int powerLevel) {
@@ -349,22 +352,55 @@ public class RfidManager {
             return this;
         }
 
+        public ConfigurationBuilder target(RfidTarget target) {
+            configBuilder.target(target);
+            return this;
+        }
+
+        public ConfigurationBuilder inventoryMode(RfidInventoryMode mode) {
+            configBuilder.inventoryMode(mode);
+            return this;
+        }
+
+        public ConfigurationBuilder region(RfidRegion region) {
+            configBuilder.region(region);
+            return this;
+        }
+
         public ConfigurationBuilder qValue(int qValue) {
             configBuilder.qValue(qValue);
             return this;
         }
 
-        public ConfigurationBuilder inventoryMode(com.csl.rfidsdk.config.RfidInventoryMode mode) {
-            configBuilder.inventoryMode(mode);
+        public ConfigurationBuilder enableBeep(boolean enableBeep) {
+            configBuilder.enableBeep(enableBeep);
+            return this;
+        }
+
+        public ConfigurationBuilder enableVibrate(boolean enableVibrate) {
+            configBuilder.enableVibrate(enableVibrate);
             return this;
         }
 
         /**
-         * Apply the configuration synchronously
+         * Apply the configuration asynchronously with callback
+         * @param callback Callback for configuration result
+         */
+        public void apply(RfidConfigurationCallback callback) {
+            manager.ensureInitialized();
+            RfidConfiguration config = configBuilder.build();
+            manager.currentConfiguration = config;
+            manager.configurationManager.applyConfiguration(config, callback);
+        }
+
+        /**
+         * Apply the configuration synchronously (blocks until complete)
+         * Not recommended - use apply(callback) instead for better UX
          */
         public void applySync() {
             RfidConfiguration config = configBuilder.build();
-            manager.applyConfiguration(config);
+            manager.currentConfiguration = config;
+            manager.log("Configuration stored (will be applied on next operation)");
         }
     }
 }

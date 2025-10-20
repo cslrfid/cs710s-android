@@ -102,15 +102,17 @@ public class RfidConnectionManager {
                                 String address = scanData.device.getAddress();
                                 String name = scanData.getName();
                                 int rssi = scanData.rssi;
+                                int serviceUUID = scanData.serviceUUID2p2;
 
                                 android.util.Log.d("SCAN_DEBUG", "Device found: " + name +
-                                    " (" + address + ") RSSI: " + rssi);
+                                    " (" + address + ") RSSI: " + rssi + " serviceUUID: " + serviceUUID);
 
                                 RfidReader reader = new RfidReader(
                                         name != null ? name : "Unknown",
                                         address,
                                         rssi,
-                                        scanData.device
+                                        scanData.device,
+                                        serviceUUID  // Pass serviceUUID from scan data
                                 );
 
                                 // Check if this is a new device or an update
@@ -221,14 +223,15 @@ public class RfidConnectionManager {
             return;
         }
 
-        // Create ReaderDevice for SDK
+        // Create ReaderDevice for SDK with correct serviceUUID
         ReaderDevice readerDevice = new ReaderDevice(
                 reader.getName(),
                 reader.getAddress(),
                 false,
                 "",
+                0,
                 reader.getRssi(),
-                0
+                reader.getServiceUUID()  // Use serviceUUID from reader to route to correct connector
         );
 
         log("Connecting to " + reader.getName() + "...");
@@ -238,19 +241,42 @@ public class RfidConnectionManager {
             try {
                 CsLibrary4A sdk = sdkBridge.getSdk();
 
+                // Debug: Check SDK Bluetooth state before connecting
+                android.util.Log.d("CONNECTION_DEBUG", "=== PRE-CONNECTION STATE ===");
+                android.util.Log.d("CONNECTION_DEBUG", "Reader: " + reader.getName() + " (" + reader.getAddress() + ")");
+                android.util.Log.d("CONNECTION_DEBUG", "ServiceUUID: " + readerDevice.getServiceUUID2p1());
+                android.util.Log.d("CONNECTION_DEBUG", "Thread: " + Thread.currentThread().getName());
+
+                // Check if SDK thinks it's already connected
+                boolean alreadyConnected = sdk.isBleConnected();
+                android.util.Log.d("CONNECTION_DEBUG", "SDK isBleConnected() before connect: " + alreadyConnected);
+
                 // Initiate connection (cslibrary4a-usage.md line 98)
                 // Note: connect() returns void - it's asynchronous
                 log("Calling sdk.connect() on thread: " + Thread.currentThread().getName());
+                android.util.Log.d("CONNECTION_DEBUG", "About to call sdk.connect(readerDevice)");
                 sdk.connect(readerDevice);
+                android.util.Log.d("CONNECTION_DEBUG", "sdk.connect() returned (void)");
 
-                // Wait for connection to establish (cslibrary4a-usage.md line 102-114)
-                connectionPollRunnable = new Runnable() {
-                    private int waitCount = 40; // 20 seconds (40 * 500ms)
+                // Poll for connection on background thread (can use Thread.sleep)
+                threadManager.executeOnBackground(() -> {
+                    int waitCount = 40; // 20 seconds (40 * 500ms)
 
-                    @Override
-                    public void run() {
+                    while (waitCount > 0) {
                         try {
-                            if (sdk.isBleConnected()) {
+                            Thread.sleep(500);
+
+                            // Check connection status
+                            boolean bleConnected = sdk.isBleConnected();
+
+                            // Log status every 5 checks or when connected
+                            if ((40 - waitCount) % 5 == 0 || bleConnected) {
+                                android.util.Log.d("CONNECTION_DEBUG",
+                                    "BLE Status check #" + (40 - waitCount) + "/40: " +
+                                    "isBleConnected=" + bleConnected);
+                            }
+
+                            if (bleConnected) {
                                 // Connection successful
                                 log("Connected to " + reader.getName());
                                 if (callback != null) {
@@ -258,35 +284,34 @@ public class RfidConnectionManager {
                                             callback.onConnected(connectedReader)
                                     );
                                 }
-                            } else if (waitCount > 0) {
-                                // Still waiting, check again
-                                waitCount--;
-                                threadManager.executeOnMainDelayed(this, 500);
-                            } else {
-                                // Timeout
-                                connectedReader = null;
-                                log("Connection timeout for " + reader.getName());
-                                if (callback != null) {
-                                    threadManager.executeOnMain(() ->
-                                            callback.onConnectionFailed(new RfidError(
-                                                    "Connection timeout",
-                                                    RfidError.ErrorType.TIMEOUT
-                                            ))
-                                    );
-                                }
+                                return; // Exit polling loop
                             }
-                        } catch (Exception e) {
-                            connectedReader = null;
-                            log("Error checking connection: " + e.getMessage());
+
+                            waitCount--;
+                            log("Connection check " + (40 - waitCount) + "/40 - still waiting...");
+
+                        } catch (InterruptedException e) {
+                            log("Connection polling interrupted");
+                            break;
                         }
                     }
-                };
 
-                // Start polling connection status after 500ms
-                threadManager.executeOnMainDelayed(connectionPollRunnable, 500);
+                    // Timeout reached
+                    connectedReader = null;
+                    log("Connection timeout for " + reader.getName());
+                    if (callback != null) {
+                        threadManager.executeOnMain(() ->
+                                callback.onConnectionFailed(new RfidError(
+                                        "Connection timeout - reader did not respond",
+                                        RfidError.ErrorType.TIMEOUT
+                                ))
+                        );
+                    }
+                });
 
             } catch (Exception e) {
                 connectedReader = null;
+                log("Error initiating connection: " + e.getMessage());
                 if (callback != null) {
                     threadManager.executeOnMain(() ->
                             callback.onConnectionFailed(new RfidError(

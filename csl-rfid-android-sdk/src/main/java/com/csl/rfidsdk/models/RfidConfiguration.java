@@ -17,6 +17,8 @@ public class RfidConfiguration {
     private final boolean populateRssi;
     private final boolean populatePhase;
     private final boolean populateChannel;
+    private final boolean enableBeep;
+    private final boolean enableVibrate;
 
     private RfidConfiguration(Builder builder) {
         this.powerLevel = builder.powerLevel;
@@ -28,6 +30,8 @@ public class RfidConfiguration {
         this.populateRssi = builder.populateRssi;
         this.populatePhase = builder.populatePhase;
         this.populateChannel = builder.populateChannel;
+        this.enableBeep = builder.enableBeep;
+        this.enableVibrate = builder.enableVibrate;
     }
 
     public int getPowerLevel() {
@@ -66,6 +70,14 @@ public class RfidConfiguration {
         return populateChannel;
     }
 
+    public boolean isEnableBeep() {
+        return enableBeep;
+    }
+
+    public boolean isEnableVibrate() {
+        return enableVibrate;
+    }
+
     public static class Builder {
         private int powerLevel = 300; // Default 30.0 dBm
         private int session = 1;
@@ -76,6 +88,8 @@ public class RfidConfiguration {
         private boolean populateRssi = true;
         private boolean populatePhase = false;
         private boolean populateChannel = false;
+        private boolean enableBeep = true;
+        private boolean enableVibrate = true;
 
         public Builder powerLevel(int powerLevel) {
             this.powerLevel = powerLevel;
@@ -119,6 +133,16 @@ public class RfidConfiguration {
 
         public Builder populateChannel(boolean populateChannel) {
             this.populateChannel = populateChannel;
+            return this;
+        }
+
+        public Builder enableBeep(boolean enableBeep) {
+            this.enableBeep = enableBeep;
+            return this;
+        }
+
+        public Builder enableVibrate(boolean enableVibrate) {
+            this.enableVibrate = enableVibrate;
             return this;
         }
 

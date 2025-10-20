@@ -12,6 +12,7 @@ public class RfidError {
         CONNECTION_FAILED,
         CONNECTION_LOST,
         DISCONNECTED,
+        NOT_CONNECTED,
         SCAN_FAILED,
         INVENTORY_FAILED,
         CONFIGURATION_FAILED,
