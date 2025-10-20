@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:fitsSystemWindows="true">
 
     <TextView
         android:id="@+id/textStats"
@@ -14,30 +15,6 @@
         android:padding="16dp"
         android:background="@android:color/darker_gray"
         android:textColor="@android:color/white" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp">
-
-        <Button
-            android:id="@+id/btnInventory"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/btn_start_inventory"
-            android:layout_marginEnd="4dp" />
-
-        <Button
-            android:id="@+id/btnClear"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/btn_clear"
-            android:layout_marginStart="4dp" />
-
-    </LinearLayout>
 
     <TextView
         android:id="@+id/textEmpty"
@@ -57,5 +34,34 @@
         android:layout_weight="1"
         android:padding="8dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+    <!-- Buttons moved to bottom for better accessibility -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <Button
+            android:id="@+id/btnInventory"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/btn_start_inventory"
+            android:layout_marginEnd="4dp"
+            android:textSize="16sp"
+            android:padding="16dp" />
+
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/btn_clear"
+            android:layout_marginStart="4dp"
+            android:textSize="16sp"
+            android:padding="16dp" />
+
+    </LinearLayout>
 
 </LinearLayout>

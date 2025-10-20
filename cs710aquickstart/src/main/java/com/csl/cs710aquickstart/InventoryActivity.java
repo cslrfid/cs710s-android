@@ -13,6 +13,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.csl.cs710aquickstart.adapters.TagListAdapter;
 import com.csl.cs710aquickstart.viewmodels.InventoryViewModel;
+import com.csl.rfidsdk.callbacks.RfidConfigurationCallback;
+import com.csl.rfidsdk.config.RfidInventoryMode;
+import com.csl.rfidsdk.config.RfidTarget;
+import com.csl.rfidsdk.models.RfidError;
 import com.csl.rfidsdk.models.RfidTag;
 
 /**
@@ -45,6 +49,11 @@ public class InventoryActivity extends AppCompatActivity {
         // Setup RecyclerView
         adapter = new TagListAdapter(this::onTagClick);
         recyclerViewTags.setAdapter(adapter);
+
+        // Apply configuration if connected
+        if (viewModel.getRfidManager().isConnected()) {
+            applyReaderConfiguration();
+        }
 
         // Observe tags
         viewModel.getTags().observe(this, tags -> {
@@ -113,6 +122,37 @@ public class InventoryActivity extends AppCompatActivity {
         Intent intent = new Intent(this, GeigerSearchActivity.class);
         intent.putExtra("TARGET_EPC", tag.getEpc());
         startActivity(intent);
+    }
+
+    /**
+     * Apply reader configuration when inventory page loads
+     * Configuration as specified in rfid-wrapper-proposal.md section 3.4
+     * Note: Region is not set - reader uses its hardware default region
+     */
+    private void applyReaderConfiguration() {
+        viewModel.getRfidManager().configure()
+                .powerLevel(300)                          // 30.0 dBm
+                .session(1)                               // Session 1
+                .target(RfidTarget.A)                     // Target A
+                .inventoryMode(RfidInventoryMode.COMPACT) // Compact mode
+                .qValue(7)                                // Q = 7
+                .enableBeep(true)                         // Enable beep
+                .enableVibrate(true)                      // Enable vibrate
+                .apply(new RfidConfigurationCallback() {
+                    @Override
+                    public void onConfigured() {
+                        Toast.makeText(InventoryActivity.this,
+                                "Reader configured successfully",
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onConfigurationFailed(RfidError error) {
+                        Toast.makeText(InventoryActivity.this,
+                                "Configuration failed: " + error.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 
     @Override

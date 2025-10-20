@@ -9,6 +9,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -23,8 +24,12 @@ public class ScanActivity extends AppCompatActivity {
     private ScanViewModel viewModel;
     private ReaderListAdapter adapter;
     private Button btnScan;
+    private Button btnDisconnect;
     private ProgressBar progressBar;
     private TextView textEmpty;
+    private TextView textConnectedReaderName;
+    private TextView textConnectedReaderAddress;
+    private CardView cardConnectedReader;
     private RecyclerView recyclerView;
 
     @Override
@@ -37,13 +42,20 @@ public class ScanActivity extends AppCompatActivity {
 
         // Setup views
         btnScan = findViewById(R.id.btnScan);
+        btnDisconnect = findViewById(R.id.btnDisconnect);
         progressBar = findViewById(R.id.progressBar);
         textEmpty = findViewById(R.id.textEmpty);
+        textConnectedReaderName = findViewById(R.id.textConnectedReaderName);
+        textConnectedReaderAddress = findViewById(R.id.textConnectedReaderAddress);
+        cardConnectedReader = findViewById(R.id.cardConnectedReader);
         recyclerView = findViewById(R.id.recyclerView);
 
         // Setup RecyclerView
         adapter = new ReaderListAdapter(this::onReaderClick);
         recyclerView.setAdapter(adapter);
+
+        // Check if already connected on start
+        updateConnectionStatus();
 
         // Observe readers
         viewModel.getReaders().observe(this, readers -> {
@@ -81,9 +93,12 @@ public class ScanActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.connecting, Toast.LENGTH_SHORT).show();
             } else if (state == ScanViewModel.ConnectionState.CONNECTED) {
                 Toast.makeText(this, R.string.connected, Toast.LENGTH_SHORT).show();
+                updateConnectionStatus();
                 // Navigate to inventory
                 startActivity(new Intent(this, InventoryActivity.class));
                 finish();
+            } else if (state == ScanViewModel.ConnectionState.DISCONNECTED) {
+                updateConnectionStatus();
             }
         });
 
@@ -96,6 +111,28 @@ public class ScanActivity extends AppCompatActivity {
                 viewModel.startScan();
             }
         });
+
+        // Disconnect button
+        btnDisconnect.setOnClickListener(v -> {
+            viewModel.disconnect();
+            Toast.makeText(this, "Disconnected from reader", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    /**
+     * Update the connected reader status UI
+     */
+    private void updateConnectionStatus() {
+        RfidReader connectedReader = viewModel.getConnectedReader();
+        if (connectedReader != null) {
+            // Show connected reader card
+            cardConnectedReader.setVisibility(View.VISIBLE);
+            textConnectedReaderName.setText(connectedReader.getName());
+            textConnectedReaderAddress.setText(connectedReader.getAddress());
+        } else {
+            // Hide connected reader card
+            cardConnectedReader.setVisibility(View.GONE);
+        }
     }
 
     private void onReaderClick(RfidReader reader) {

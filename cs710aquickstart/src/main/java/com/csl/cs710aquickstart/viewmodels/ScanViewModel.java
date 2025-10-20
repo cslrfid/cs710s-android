@@ -125,6 +125,15 @@ public class ScanViewModel extends AndroidViewModel {
         });
     }
 
+    public void disconnect() {
+        rfidManager.disconnect();
+        connectionStateLiveData.postValue(ConnectionState.DISCONNECTED);
+    }
+
+    public RfidReader getConnectedReader() {
+        return rfidManager.getConnectedReader();
+    }
+
     public RfidManager getRfidManager() {
         return rfidManager;
     }
