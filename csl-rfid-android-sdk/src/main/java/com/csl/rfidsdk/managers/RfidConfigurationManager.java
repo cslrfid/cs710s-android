@@ -121,11 +121,6 @@ public class RfidConfigurationManager {
         sdk.setInventoryVibrate(configuration.isEnableVibrate());
         log("Vibrate: " + configuration.isEnableVibrate());
 
-        // 8. Set RSSI display setting to dBm (1) instead of dBuV (0)
-        // This ensures RSSI values are displayed in decibel-milliwatts
-        sdk.setRssiDisplaySetting(1);
-        log("RSSI display: dBm (value=1)");
-
         log("All configuration settings applied");
     }
 

@@ -1,14 +1,11 @@
 package com.csl.cs710aquickstart;
 
-import android.media.MediaPlayer;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ProgressBar;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.csl.cs710aquickstart.viewmodels.GeigerViewModel;
+import com.ekn.gruzer.gaugelibrary.HalfGauge;
+import com.ekn.gruzer.gaugelibrary.Range;
 
 /**
  * Activity for Geiger search (tag locating)
@@ -24,17 +23,14 @@ public class GeigerSearchActivity extends AppCompatActivity {
     private GeigerViewModel viewModel;
     private EditText editTargetEpc;
     private Button btnSearch;
-    private ProgressBar progressProximity;
+    private HalfGauge halfGauge;
     private TextView textRssi;
     private TextView textStats;
-    private CheckBox checkBoxBeep;
-    private SeekBar seekbarThreshold;
-    private TextView textThreshold;
 
-    private MediaPlayer beepPlayer;
-    private Handler beepHandler = new Handler(Looper.getMainLooper());
-    private Runnable beepRunnable;
-    private int currentBeepInterval = 0;
+    // Timeout mechanism for RSSI reset
+    private Handler timeoutHandler = new Handler(Looper.getMainLooper());
+    private Runnable resetRssiRunnable;
+    private static final long RSSI_TIMEOUT_MS = 2000; // 2 seconds
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,12 +43,40 @@ public class GeigerSearchActivity extends AppCompatActivity {
         // Setup views
         editTargetEpc = findViewById(R.id.editTargetEpc);
         btnSearch = findViewById(R.id.btnSearch);
-        progressProximity = findViewById(R.id.progressProximity);
+        halfGauge = findViewById(R.id.halfGauge);
         textRssi = findViewById(R.id.textRssi);
         textStats = findViewById(R.id.textStats);
-        checkBoxBeep = findViewById(R.id.checkBoxBeep);
-        seekbarThreshold = findViewById(R.id.seekbarThreshold);
-        textThreshold = findViewById(R.id.textThreshold);
+
+        // Setup HalfGauge with RSSI range (-80 to -20 dBm)
+        // Low to high: light grey -> yellow -> orange -> red
+        Range greyRange = new Range();
+        greyRange.setColor(Color.parseColor("#BDBDBD")); // Light grey for far
+        greyRange.setFrom(0.0);
+        greyRange.setTo(25.0);
+
+        Range yellowRange = new Range();
+        yellowRange.setColor(Color.parseColor("#FFEB3B")); // Yellow for medium
+        yellowRange.setFrom(25.0);
+        yellowRange.setTo(50.0);
+
+        Range orangeRange = new Range();
+        orangeRange.setColor(Color.parseColor("#FF9800")); // Orange for close
+        orangeRange.setFrom(50.0);
+        orangeRange.setTo(75.0);
+
+        Range redRange = new Range();
+        redRange.setColor(Color.parseColor("#F44336")); // Red for very close
+        redRange.setFrom(75.0);
+        redRange.setTo(100.0);
+
+        halfGauge.addRange(greyRange);
+        halfGauge.addRange(yellowRange);
+        halfGauge.addRange(orangeRange);
+        halfGauge.addRange(redRange);
+
+        halfGauge.setMinValue(0.0);
+        halfGauge.setMaxValue(100.0);
+        halfGauge.setValue(0.0); // Start at minimum (far)
 
         // Get target EPC from intent (if launched from InventoryActivity)
         String targetEpc = getIntent().getStringExtra("TARGET_EPC");
@@ -60,19 +84,25 @@ public class GeigerSearchActivity extends AppCompatActivity {
             editTargetEpc.setText(targetEpc);
         }
 
-        // Setup beep player (use a simple tone generator since we don't have audio file)
-        // In a real implementation, add beep_tone.wav to res/raw/
-        // beepPlayer = MediaPlayer.create(this, R.raw.beep_tone);
+        // Setup RSSI reset runnable
+        resetRssiRunnable = () -> {
+            // Reset to minimum RSSI (far)
+            halfGauge.setValue(0.0);
+            textRssi.setText(String.format("%.1f", 0.0));
+        };
 
         // Observe Geiger stats
         viewModel.getGeigerStats().observe(this, stats -> {
             if (stats != null) {
-                // Update progress
-                double proximity = stats.getProximityLevel();
-                progressProximity.setProgress((int) (proximity * 100));
+                // Cancel any pending reset
+                timeoutHandler.removeCallbacks(resetRssiRunnable);
 
-                // Update RSSI
-                textRssi.setText(String.format("%.1f dBm", stats.getCurrentRssi()));
+                // Update gauge with current RSSI (formatted to 2 decimal places)
+                double currentRssi = stats.getCurrentRssi();
+                halfGauge.setValue(Math.floor(stats.getProximityLevel() * 10) / 10.0);
+
+                // Update RSSI text (also 2 decimal places)
+                textRssi.setText(String.format("%.1f", currentRssi));
 
                 // Update stats
                 textStats.setText(String.format(
@@ -82,10 +112,8 @@ public class GeigerSearchActivity extends AppCompatActivity {
                         stats.getPeakRssi()
                 ));
 
-                // Handle beeping
-                if (checkBoxBeep.isChecked()) {
-                    updateBeeping(stats.getCurrentRssi(), seekbarThreshold.getProgress());
-                }
+                // Schedule RSSI reset after 2 seconds of no reads
+                timeoutHandler.postDelayed(resetRssiRunnable, RSSI_TIMEOUT_MS);
             }
         });
 
@@ -97,7 +125,9 @@ public class GeigerSearchActivity extends AppCompatActivity {
             } else {
                 btnSearch.setText(R.string.btn_search);
                 editTargetEpc.setEnabled(true);
-                stopBeeping();
+                // Cancel timeout and reset when search stops
+                timeoutHandler.removeCallbacks(resetRssiRunnable);
+                resetRssiRunnable.run(); // Reset immediately
             }
         });
 
@@ -129,95 +159,12 @@ public class GeigerSearchActivity extends AppCompatActivity {
                 viewModel.startSearch(epc, 1); // Memory bank 1 = EPC
             }
         });
-
-        // Threshold seekbar
-        seekbarThreshold.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                textThreshold.setText(String.format("%d dBm", progress - 90));
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-            }
-        });
-
-        // Initialize threshold display
-        textThreshold.setText(String.format("%d dBm", seekbarThreshold.getProgress() - 90));
-    }
-
-    private void updateBeeping(double rssi, int thresholdProgress) {
-        int threshold = thresholdProgress - 90; // Convert to dBm
-
-        if (rssi < threshold) {
-            stopBeeping();
-            return;
-        }
-
-        // Calculate beep interval based on RSSI
-        // Higher RSSI = faster beeping
-        int interval;
-        if (rssi >= -20) {
-            interval = 50;       // Very close - continuous
-        } else if (rssi >= -30) {
-            interval = 250;      // Close - fast
-        } else if (rssi >= -40) {
-            interval = 500;      // Medium - moderate
-        } else if (rssi >= -50) {
-            interval = 1000;     // Far - slow
-        } else {
-            interval = 2000;     // Very far - very slow
-        }
-
-        // Only update if interval changed
-        if (interval != currentBeepInterval) {
-            currentBeepInterval = interval;
-            stopBeeping();
-            startBeeping(interval);
-        }
-    }
-
-    private void startBeeping(int interval) {
-        beepRunnable = new Runnable() {
-            @Override
-            public void run() {
-                // Play beep sound
-                if (beepPlayer != null) {
-                    beepPlayer.seekTo(0);
-                    beepPlayer.start();
-                } else {
-                    // Fallback: use system sound if MediaPlayer not available
-                    // You could use ToneGenerator here
-                }
-
-                beepHandler.postDelayed(this, interval);
-            }
-        };
-        beepHandler.post(beepRunnable);
-    }
-
-    private void stopBeeping() {
-        currentBeepInterval = 0;
-        if (beepRunnable != null) {
-            beepHandler.removeCallbacks(beepRunnable);
-            beepRunnable = null;
-        }
-        if (beepPlayer != null && beepPlayer.isPlaying()) {
-            beepPlayer.pause();
-        }
     }
 
     @Override
     protected void onDestroy() {
-        stopBeeping();
-        if (beepPlayer != null) {
-            beepPlayer.release();
-            beepPlayer = null;
-        }
+        // Clean up timeout handler
+        timeoutHandler.removeCallbacks(resetRssiRunnable);
         viewModel.stopSearch();
         super.onDestroy();
     }

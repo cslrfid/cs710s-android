@@ -184,18 +184,15 @@ public class RfidGeigerManager {
                 // Target tag found (only the selected tag will be returned during search)
                 if (tagData.decodedError == null) {
                     readCount++;
-                    // RSSI: SDK returns positive values when rssiDisplaySetting=1 (dBm mode)
-                    // True dBm values are negative, so we negate to get proper dBm format
-                    currentRssi = -Math.abs(tagData.decodedRssi);
-
+                    currentRssi = tagData.decodedRssi;
                     // Update peak RSSI (highest = least negative = closest)
                     if (currentRssi > peakRssi) {
                         peakRssi = currentRssi;
                     }
 
                     // Calculate proximity percentage (0-100)
-                    // RSSI typically ranges from -90 dBm (far) to -10 dBm (very close)
-                    double normalizedRssi = (currentRssi + 90.0) / 80.0; // Normalize to 0-1
+                    // RSSI typically ranges from 30 dBuV (far) to 70 dBuV (very close)
+                    double normalizedRssi = (currentRssi - 30.0) / 40.0; // Normalize to 0-1
                     int proximity = (int) Math.max(0, Math.min(100, normalizedRssi * 100));
 
                     // Build stats

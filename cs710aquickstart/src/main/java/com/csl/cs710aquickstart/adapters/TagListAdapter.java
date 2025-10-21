@@ -67,7 +67,7 @@ public class TagListAdapter extends RecyclerView.Adapter<TagListAdapter.TagViewH
 
         public void bind(RfidTag tag, OnTagClickListener clickListener) {
             textEpc.setText(tag.getEpc());
-            textRssi.setText(String.format("%.1f dBm", tag.getRssi()));
+            textRssi.setText(String.format("Signal: %.1f", tag.getRssi()));
             textCount.setText(String.format("Count: %d", tag.getCount()));
 
             itemView.setOnClickListener(v -> {

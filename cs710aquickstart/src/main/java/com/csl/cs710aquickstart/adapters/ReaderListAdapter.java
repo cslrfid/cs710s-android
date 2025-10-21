@@ -68,7 +68,7 @@ public class ReaderListAdapter extends RecyclerView.Adapter<ReaderListAdapter.Re
         public void bind(RfidReader reader, OnReaderClickListener clickListener) {
             textName.setText(reader.getName());
             textAddress.setText(reader.getAddress());
-            textRssi.setText(String.format("%d dBm", reader.getRssi()));
+            textRssi.setText(String.format("Signal: %d", reader.getRssi()));
 
             itemView.setOnClickListener(v -> {
                 if (clickListener != null) {

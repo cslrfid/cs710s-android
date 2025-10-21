@@ -30,11 +30,11 @@
     <string name="hint_target_epc">Enter target EPC</string>
     <string name="btn_search">Search</string>
     <string name="btn_stop_search">Stop</string>
-    <string name="rssi_label">RSSI:</string>
+    <string name="rssi_label">Signal:</string>
     <string name="proximity_label">Proximity:</string>
     <string name="enable_beep">Enable Beep</string>
     <string name="threshold_label">Threshold:</string>
-    <string name="geiger_stats_format">Reads: %1$d | Rate: %2$.1f/sec | Peak: %3$.1f dBm</string>
+    <string name="geiger_stats_format">Reads: %1$d | Rate: %2$.1f/sec | Peak: %3$.1f dBuV</string>
 
     <!-- Errors -->
     <string name="error_no_bluetooth">Bluetooth is not available</string>

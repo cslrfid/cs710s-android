@@ -41,14 +41,14 @@ public class RfidGeigerStats {
     /**
      * Get proximity level (0.0 - 1.0)
      * Based on RSSI threshold mapping
-     * -90 dBm = 0.0 (far)
-     * -10 dBm = 1.0 (very close)
+     * 30 dBuV = 0.0 (far)
+     * 70 dBuV = 1.0 (very close)
      */
     public double getProximityLevel() {
-        double min = -90.0;
-        double max = -10.0;
+        double min = 30.0;
+        double max = 70.0;
         double proximity = (currentRssi - min) / (max - min);
-        return Math.max(0.0, Math.min(1.0, proximity));
+        return Math.max(0.0, Math.min(1.0, proximity)) * 100;
     }
 
     @Override

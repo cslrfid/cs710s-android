@@ -34,13 +34,11 @@
             android:textStyle="bold"
             android:layout_marginBottom="8dp" />
 
-        <ProgressBar
-            android:id="@+id/progressProximity"
-            style="?android:attr/progressBarStyleHorizontal"
+        <com.ekn.gruzer.gaugelibrary.HalfGauge
+            android:id="@+id/halfGauge"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:max="100"
-            android:progress="0"
+            android:layout_height="300dp"
+            android:layout_gravity="center"
             android:layout_marginBottom="16dp" />
 
         <LinearLayout
@@ -60,7 +58,7 @@
                 android:id="@+id/textRssi"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="-90.0 dBm"
+                android:text="0.0"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -74,51 +72,6 @@
             android:textSize="12sp"
             android:textColor="@android:color/darker_gray"
             android:layout_marginBottom="24dp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@android:color/darker_gray"
-            android:layout_marginBottom="16dp" />
-
-        <CheckBox
-            android:id="@+id/checkBoxBeep"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/enable_beep"
-            android:checked="true"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/threshold_label"
-            android:textSize="14sp"
-            android:layout_marginBottom="8dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <SeekBar
-                android:id="@+id/seekbarThreshold"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:max="80"
-                android:progress="30" />
-
-            <TextView
-                android:id="@+id/textThreshold"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="-60 dBm"
-                android:textSize="14sp"
-                android:layout_marginStart="16dp" />
-
-        </LinearLayout>
 
         </LinearLayout>
 

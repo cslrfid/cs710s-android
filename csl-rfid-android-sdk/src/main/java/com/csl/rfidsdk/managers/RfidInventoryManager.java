@@ -155,9 +155,7 @@ public class RfidInventoryManager {
                     // Successfully read tag
                     CsLibrary4A sdk = sdkBridge.getSdk();
                     String epc = sdk.byteArrayToString(tagData.decodedEpc);
-                    // RSSI: SDK returns positive values when rssiDisplaySetting=1 (dBm mode)
-                    // True dBm values are negative, so we negate to get proper dBm format
-                    double rssi = -Math.abs(tagData.decodedRssi);
+                    double rssi = tagData.decodedRssi;
                     int phase = tagData.decodedPhase;
                     int channel = tagData.decodedChidx;
                     long timestamp = tagData.decodedTime;
