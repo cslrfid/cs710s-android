@@ -49,6 +49,9 @@ dependencies {
     // Material Design
     implementation 'com.google.android.material:material:1.12.0'
 
+    // Gauge library
+    implementation 'com.github.Gruzer:simple-gauge-android:0.3.1'
+
     // Testing
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
