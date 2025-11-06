@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
+import com.csl.rfidsdk.callbacks.BarcodeScanCallback;
 import com.csl.rfidsdk.callbacks.RfidConfigurationCallback;
 import com.csl.rfidsdk.callbacks.RfidConnectionCallback;
 import com.csl.rfidsdk.callbacks.RfidGeigerCallback;
@@ -14,6 +15,7 @@ import com.csl.rfidsdk.config.RfidRegion;
 import com.csl.rfidsdk.config.RfidTarget;
 import com.csl.rfidsdk.internal.SdkBridge;
 import com.csl.rfidsdk.internal.ThreadManager;
+import com.csl.rfidsdk.managers.BarcodeScanManager;
 import com.csl.rfidsdk.managers.RfidConfigurationManager;
 import com.csl.rfidsdk.managers.RfidConnectionManager;
 import com.csl.rfidsdk.managers.RfidGeigerManager;
@@ -36,6 +38,7 @@ public class RfidManager {
     private RfidConnectionManager connectionManager;  // Lazy initialized
     private RfidInventoryManager inventoryManager;  // Lazy initialized
     private RfidGeigerManager geigerManager;  // Lazy initialized
+    private BarcodeScanManager barcodeManager;  // Lazy initialized
     private RfidConfigurationManager configurationManager;  // Lazy initialized
     private final RfidManagerBuilder.LoggerCallback logger;
     private final boolean autoReconnect;
@@ -134,6 +137,7 @@ public class RfidManager {
         this.connectionManager = new RfidConnectionManager(sdkBridge, threadManager, logger);
         this.inventoryManager = new RfidInventoryManager(sdkBridge, threadManager, logger);
         this.geigerManager = new RfidGeigerManager(sdkBridge, threadManager, logger);
+        this.barcodeManager = new BarcodeScanManager(sdkBridge, threadManager, logger);
         this.configurationManager = new RfidConfigurationManager(sdkBridge, threadManager, logger);
 
         initialized = true;
@@ -291,6 +295,44 @@ public class RfidManager {
         return geigerManager.isSearching();
     }
 
+    // ========== Barcode Scanning Operations ==========
+
+    /**
+     * Start barcode scanning
+     * @param callback Callback to receive barcode scans and statistics
+     */
+    public void startBarcodeScan(BarcodeScanCallback callback) {
+        ensureInitialized();
+        log("Starting barcode scanning");
+        barcodeManager.startScan(callback);
+    }
+
+    /**
+     * Stop barcode scanning
+     */
+    public void stopBarcodeScan() {
+        if (!initialized) return;
+        log("Stopping barcode scanning");
+        barcodeManager.stopScan();
+    }
+
+    /**
+     * Check if barcode scanning is running
+     */
+    public boolean isBarcodeScanning() {
+        if (!initialized) return false;
+        return barcodeManager.isScanning();
+    }
+
+    /**
+     * Check if barcode module is available
+     * @return true if barcode scanning is available
+     */
+    public boolean isBarcodeAvailable() {
+        if (!initialized) return false;
+        return barcodeManager.isBarcodeAvailable();
+    }
+
     // ========== Lifecycle Management ==========
 
     /**
@@ -304,6 +346,13 @@ public class RfidManager {
         stopScan();
         stopInventory();
         stopGeigerSearch();
+        stopBarcodeScan();
+
+        // Cleanup managers before shutdown
+        inventoryManager.cleanup();
+        geigerManager.cleanup();
+        barcodeManager.cleanup();
+
         connectionManager.disconnect();
         threadManager.shutdown();
         sdkBridge.release();
