@@ -191,8 +191,22 @@ public class RfidGeigerManager {
                     }
 
                     // Calculate proximity percentage (0-100)
-                    // RSSI typically ranges from 30 dBuV (far) to 70 dBuV (very close)
-                    double normalizedRssi = (currentRssi - 30.0) / 40.0; // Normalize to 0-1
+                    // RSSI range depends on reader type:
+                    // - CS108 (get98XX=0): 30-70 dBuV (40 dBuV span)
+                    // - CS710S (get98XX=2): 10-60 dBuV (50 dBuV span)
+                    CsLibrary4A sdk = sdkBridge.getSdk();
+                    int readerType = sdk.get98XX();
+                    double minRssi, maxRssi;
+                    if (readerType == 2) {
+                        // CS710S reader (Atmel)
+                        minRssi = 10.0;
+                        maxRssi = 60.0;
+                    } else {
+                        // CS108 reader (SiliconLab) or default
+                        minRssi = 30.0;
+                        maxRssi = 70.0;
+                    }
+                    double normalizedRssi = (currentRssi - minRssi) / (maxRssi - minRssi);
                     int proximity = (int) Math.max(0, Math.min(100, normalizedRssi * 100));
 
                     // Build stats
