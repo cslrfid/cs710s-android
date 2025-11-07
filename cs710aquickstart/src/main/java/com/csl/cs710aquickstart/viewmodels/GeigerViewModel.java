@@ -11,6 +11,7 @@ import com.csl.cs710aquickstart.QuickStartApplication;
 import com.csl.rfidsdk.RfidManager;
 import com.csl.rfidsdk.callbacks.RfidGeigerCallback;
 import com.csl.rfidsdk.config.RfidStopReason;
+import com.csl.rfidsdk.models.BatteryInfo;
 import com.csl.rfidsdk.models.RfidError;
 import com.csl.rfidsdk.models.RfidGeigerStats;
 
@@ -22,6 +23,7 @@ public class GeigerViewModel extends AndroidViewModel {
     private final MutableLiveData<RfidGeigerStats> geigerStatsLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> searchingLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<RfidError> errorLiveData = new MutableLiveData<>();
+    private final MutableLiveData<BatteryInfo> batteryLiveData = new MutableLiveData<>();
 
     public GeigerViewModel(@NonNull Application application) {
         super(application);
@@ -39,6 +41,10 @@ public class GeigerViewModel extends AndroidViewModel {
 
     public LiveData<RfidError> getErrors() {
         return errorLiveData;
+    }
+
+    public LiveData<BatteryInfo> getBattery() {
+        return batteryLiveData;
     }
 
     public void startSearch(String targetEpc, int memoryBank) {
@@ -67,6 +73,11 @@ public class GeigerViewModel extends AndroidViewModel {
             public void onSearchError(RfidError error) {
                 errorLiveData.postValue(error);
                 searchingLiveData.postValue(false);
+            }
+
+            @Override
+            public void onBatteryUpdate(BatteryInfo batteryInfo) {
+                batteryLiveData.postValue(batteryInfo);
             }
         });
     }

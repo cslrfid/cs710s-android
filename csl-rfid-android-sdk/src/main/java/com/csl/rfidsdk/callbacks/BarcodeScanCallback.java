@@ -3,6 +3,7 @@ package com.csl.rfidsdk.callbacks;
 import com.csl.rfidsdk.config.RfidStopReason;
 import com.csl.rfidsdk.models.BarcodeData;
 import com.csl.rfidsdk.models.BarcodeStats;
+import com.csl.rfidsdk.models.BatteryInfo;
 import com.csl.rfidsdk.models.RfidError;
 
 /**
@@ -32,4 +33,13 @@ public interface BarcodeScanCallback {
      * @param error The error that occurred
      */
     void onScanError(RfidError error);
+
+    /**
+     * Called when battery information is updated during scanning
+     * Optional callback - default implementation does nothing for backward compatibility
+     * @param batteryInfo Current battery information
+     */
+    default void onBatteryUpdate(BatteryInfo batteryInfo) {
+        // Default empty implementation for backward compatibility
+    }
 }

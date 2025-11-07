@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -12,16 +13,37 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.csl.rfidsdk.RfidManager;
+import com.csl.rfidsdk.callbacks.BatteryCallback;
+import com.csl.rfidsdk.models.BatteryInfo;
+
 /**
  * Main activity with navigation to three core features
  */
 public class MainActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 100;
+    private TextView textBattery;
+    private RfidManager rfidManager;
+
+    private final BatteryCallback batteryCallback = new BatteryCallback() {
+        @Override
+        public void onBatteryUpdate(BatteryInfo batteryInfo) {
+            if (textBattery != null && batteryInfo != null) {
+                textBattery.setText(String.format("Battery: %d%%", batteryInfo.getPercentage()));
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Get shared RfidManager
+        rfidManager = QuickStartApplication.getRfidManager();
+
+        // Setup battery display
+        textBattery = findViewById(R.id.textBattery);
 
         // Check and request permissions
         if (!hasRequiredPermissions()) {
@@ -52,6 +74,31 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.error_no_permission, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateBatteryDisplay();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop battery monitoring when MainActivity is not visible
+        if (rfidManager != null) {
+            rfidManager.stopBatteryMonitoring();
+        }
+    }
+
+    private void updateBatteryDisplay() {
+        if (rfidManager != null && rfidManager.isConnected()) {
+            // Start battery monitoring when connected
+            rfidManager.startBatteryMonitoring(batteryCallback);
+            textBattery.setText("Battery: --");  // Will update on first poll
+        } else {
+            textBattery.setText("Not Connected");
+        }
     }
 
     private boolean hasRequiredPermissions() {

@@ -15,6 +15,7 @@ import com.csl.rfidsdk.callbacks.RfidInventoryCallback;
 import com.csl.rfidsdk.config.RfidStopReason;
 import com.csl.rfidsdk.models.BarcodeData;
 import com.csl.rfidsdk.models.BarcodeStats;
+import com.csl.rfidsdk.models.BatteryInfo;
 import com.csl.rfidsdk.models.RfidError;
 import com.csl.rfidsdk.models.RfidInventoryStats;
 import com.csl.rfidsdk.models.RfidTag;
@@ -39,6 +40,7 @@ public class InventoryViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> scanningLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<ScanMode> scanModeLiveData = new MutableLiveData<>(ScanMode.RFID);
     private final MutableLiveData<RfidError> errorLiveData = new MutableLiveData<>();
+    private final MutableLiveData<BatteryInfo> batteryLiveData = new MutableLiveData<>();
     private final Map<String, ScanItem> itemMap = new HashMap<>();
 
     public InventoryViewModel(@NonNull Application application) {
@@ -65,6 +67,10 @@ public class InventoryViewModel extends AndroidViewModel {
 
     public LiveData<RfidError> getErrors() {
         return errorLiveData;
+    }
+
+    public LiveData<BatteryInfo> getBattery() {
+        return batteryLiveData;
     }
 
     public void setScanMode(ScanMode mode) {
@@ -122,6 +128,11 @@ public class InventoryViewModel extends AndroidViewModel {
                 errorLiveData.postValue(error);
                 scanningLiveData.postValue(false);
             }
+
+            @Override
+            public void onBatteryUpdate(BatteryInfo batteryInfo) {
+                batteryLiveData.postValue(batteryInfo);
+            }
         });
 
         scanningLiveData.postValue(true);
@@ -156,6 +167,11 @@ public class InventoryViewModel extends AndroidViewModel {
             public void onScanError(RfidError error) {
                 errorLiveData.postValue(error);
                 scanningLiveData.postValue(false);
+            }
+
+            @Override
+            public void onBatteryUpdate(BatteryInfo batteryInfo) {
+                batteryLiveData.postValue(batteryInfo);
             }
         });
 

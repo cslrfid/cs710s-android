@@ -1,6 +1,7 @@
 package com.csl.rfidsdk.callbacks;
 
 import com.csl.rfidsdk.config.RfidStopReason;
+import com.csl.rfidsdk.models.BatteryInfo;
 import com.csl.rfidsdk.models.RfidError;
 import com.csl.rfidsdk.models.RfidInventoryStats;
 import com.csl.rfidsdk.models.RfidTag;
@@ -32,4 +33,13 @@ public interface RfidInventoryCallback {
      * @param error The error that occurred
      */
     void onInventoryError(RfidError error);
+
+    /**
+     * Called when battery information is updated during inventory
+     * Optional callback - default implementation does nothing for backward compatibility
+     * @param batteryInfo Current battery information
+     */
+    default void onBatteryUpdate(BatteryInfo batteryInfo) {
+        // Default empty implementation for backward compatibility
+    }
 }

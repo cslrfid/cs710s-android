@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.csl.rfidsdk.callbacks.BarcodeScanCallback;
+import com.csl.rfidsdk.callbacks.BatteryCallback;
 import com.csl.rfidsdk.callbacks.RfidConfigurationCallback;
 import com.csl.rfidsdk.callbacks.RfidConnectionCallback;
 import com.csl.rfidsdk.callbacks.RfidGeigerCallback;
@@ -20,6 +21,7 @@ import com.csl.rfidsdk.managers.RfidConfigurationManager;
 import com.csl.rfidsdk.managers.RfidConnectionManager;
 import com.csl.rfidsdk.managers.RfidGeigerManager;
 import com.csl.rfidsdk.managers.RfidInventoryManager;
+import com.csl.rfidsdk.models.BatteryInfo;
 import com.csl.rfidsdk.models.RfidConfiguration;
 import com.csl.rfidsdk.models.RfidReader;
 
@@ -45,6 +47,12 @@ public class RfidManager {
     private volatile boolean initialized = false;
 
     private RfidConfiguration currentConfiguration;
+
+    // Battery monitoring
+    private BatteryCallback batteryCallback;
+    private Handler batteryHandler;
+    private Runnable batteryPollRunnable;
+    private volatile boolean batteryMonitoringActive = false;
 
     /**
      * Create a new RfidManager with default configuration
@@ -353,10 +361,141 @@ public class RfidManager {
         geigerManager.cleanup();
         barcodeManager.cleanup();
 
+        // Stop battery monitoring
+        stopBatteryMonitoring();
+
         connectionManager.disconnect();
         threadManager.shutdown();
         sdkBridge.release();
         initialized = false;
+    }
+
+    // ========== Battery Information ==========
+
+    /**
+     * Get current battery information from the reader
+     * @return BatteryInfo with voltage, percentage, and formatted strings
+     */
+    public BatteryInfo getBatteryInfo() {
+        if (!initialized) return null;
+        return BatteryInfo.fromSdk(sdkBridge.getSdk());
+    }
+
+    /**
+     * Get battery percentage (0-100)
+     * @return Battery percentage, or 0 if not available
+     */
+    public int getBatteryPercentage() {
+        BatteryInfo batteryInfo = getBatteryInfo();
+        return batteryInfo != null ? batteryInfo.getPercentage() : 0;
+    }
+
+    /**
+     * Get battery voltage in volts
+     * @return Battery voltage (e.g., 3.750), or 0.0 if not available
+     */
+    public float getBatteryVoltage() {
+        BatteryInfo batteryInfo = getBatteryInfo();
+        return batteryInfo != null ? batteryInfo.getVoltage() : 0.0f;
+    }
+
+    /**
+     * Get formatted battery voltage string
+     * @return Formatted voltage string (e.g., "3.750 V"), or empty string if not available
+     */
+    public String getFormattedBatteryVoltage() {
+        BatteryInfo batteryInfo = getBatteryInfo();
+        return batteryInfo != null ? batteryInfo.getFormattedVoltage() : "";
+    }
+
+    /**
+     * Start background battery monitoring (5-second polling)
+     * Automatically called when reader connects
+     * @param callback Callback to receive battery updates
+     */
+    public void startBatteryMonitoring(BatteryCallback callback) {
+        if (!initialized) {
+            log("Cannot start battery monitoring - SDK not initialized");
+            return;
+        }
+
+        this.batteryCallback = callback;
+
+        if (batteryMonitoringActive) {
+            log("Battery monitoring already active");
+            return;
+        }
+
+        batteryMonitoringActive = true;
+
+        // Create handler on main thread if not already created
+        if (batteryHandler == null) {
+            batteryHandler = new Handler(Looper.getMainLooper());
+        }
+
+        // Create polling runnable
+        batteryPollRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!batteryMonitoringActive) return;
+
+                try {
+                    // Check if still connected
+                    if (isConnected()) {
+                        // Query battery on background thread
+                        threadManager.executeOnBackground(() -> {
+                            try {
+                                BatteryInfo batteryInfo = BatteryInfo.fromSdk(sdkBridge.getSdk());
+                                if (batteryInfo != null && batteryInfo.isValid() && batteryCallback != null) {
+                                    // Post callback to main thread
+                                    batteryHandler.post(() -> {
+                                        if (batteryCallback != null) {
+                                            batteryCallback.onBatteryUpdate(batteryInfo);
+                                        }
+                                    });
+                                }
+                            } catch (Exception e) {
+                                log("Error polling battery: " + e.getMessage());
+                            }
+                        });
+                    }
+
+                    // Schedule next poll in 5 seconds
+                    if (batteryMonitoringActive && batteryHandler != null) {
+                        batteryHandler.postDelayed(this, 5000);
+                    }
+                } catch (Exception e) {
+                    log("Error in battery monitoring: " + e.getMessage());
+                }
+            }
+        };
+
+        // Start polling
+        batteryHandler.post(batteryPollRunnable);
+        log("Battery monitoring started");
+    }
+
+    /**
+     * Stop background battery monitoring
+     * Automatically called when reader disconnects
+     */
+    public void stopBatteryMonitoring() {
+        batteryMonitoringActive = false;
+
+        if (batteryHandler != null && batteryPollRunnable != null) {
+            batteryHandler.removeCallbacks(batteryPollRunnable);
+        }
+
+        batteryCallback = null;
+        log("Battery monitoring stopped");
+    }
+
+    /**
+     * Check if battery monitoring is active
+     * @return true if monitoring, false otherwise
+     */
+    public boolean isBatteryMonitoringActive() {
+        return batteryMonitoringActive;
     }
 
     // ========== Helper Methods ==========

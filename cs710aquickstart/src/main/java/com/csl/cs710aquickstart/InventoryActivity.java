@@ -15,9 +15,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.csl.cs710aquickstart.adapters.ScanItemAdapter;
 import com.csl.cs710aquickstart.models.ScanItem;
 import com.csl.cs710aquickstart.viewmodels.InventoryViewModel;
+import com.csl.rfidsdk.RfidManager;
+import com.csl.rfidsdk.callbacks.BatteryCallback;
 import com.csl.rfidsdk.callbacks.RfidConfigurationCallback;
 import com.csl.rfidsdk.config.RfidInventoryMode;
 import com.csl.rfidsdk.config.RfidTarget;
+import com.csl.rfidsdk.models.BatteryInfo;
 import com.csl.rfidsdk.models.RfidError;
 
 /**
@@ -31,8 +34,19 @@ public class InventoryActivity extends AppCompatActivity {
     private TextView textStats;
     private TextView textEmpty;
     private TextView textModeLabel;
+    private TextView textBattery;
     private SwitchCompat switchScanMode;
     private RecyclerView recyclerViewTags;
+    private RfidManager rfidManager;
+
+    private final BatteryCallback batteryCallback = new BatteryCallback() {
+        @Override
+        public void onBatteryUpdate(BatteryInfo batteryInfo) {
+            if (textBattery != null && batteryInfo != null) {
+                textBattery.setText(String.format("Battery: %d%%", batteryInfo.getPercentage()));
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,12 +56,16 @@ public class InventoryActivity extends AppCompatActivity {
         // Setup ViewModel
         viewModel = new ViewModelProvider(this).get(InventoryViewModel.class);
 
+        // Get shared RfidManager
+        rfidManager = QuickStartApplication.getRfidManager();
+
         // Setup views
         btnInventory = findViewById(R.id.btnInventory);
         btnClear = findViewById(R.id.btnClear);
         textStats = findViewById(R.id.textStats);
         textEmpty = findViewById(R.id.textEmpty);
         textModeLabel = findViewById(R.id.textModeLabel);
+        textBattery = findViewById(R.id.textBattery);
         switchScanMode = findViewById(R.id.switchScanMode);
         recyclerViewTags = findViewById(R.id.recyclerViewTags);
 
@@ -177,6 +195,26 @@ public class InventoryActivity extends AppCompatActivity {
                                 Toast.LENGTH_LONG).show();
                     }
                 });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Start battery monitoring if connected
+        if (rfidManager != null && rfidManager.isConnected()) {
+            rfidManager.startBatteryMonitoring(batteryCallback);
+        } else if (textBattery != null) {
+            textBattery.setText("Not Connected");
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop battery monitoring when activity paused
+        if (rfidManager != null) {
+            rfidManager.stopBatteryMonitoring();
+        }
     }
 
     @Override

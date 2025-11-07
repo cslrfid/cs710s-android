@@ -13,6 +13,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.csl.cs710aquickstart.viewmodels.GeigerViewModel;
+import com.csl.rfidsdk.RfidManager;
+import com.csl.rfidsdk.callbacks.BatteryCallback;
+import com.csl.rfidsdk.models.BatteryInfo;
 import com.ekn.gruzer.gaugelibrary.HalfGauge;
 import com.ekn.gruzer.gaugelibrary.Range;
 
@@ -26,11 +29,22 @@ public class GeigerSearchActivity extends AppCompatActivity {
     private HalfGauge halfGauge;
     private TextView textRssi;
     private TextView textStats;
+    private TextView textBattery;
+    private RfidManager rfidManager;
 
     // Timeout mechanism for RSSI reset
     private Handler timeoutHandler = new Handler(Looper.getMainLooper());
     private Runnable resetRssiRunnable;
     private static final long RSSI_TIMEOUT_MS = 2000; // 2 seconds
+
+    private final BatteryCallback batteryCallback = new BatteryCallback() {
+        @Override
+        public void onBatteryUpdate(BatteryInfo batteryInfo) {
+            if (textBattery != null && batteryInfo != null) {
+                textBattery.setText(String.format("Battery: %d%%", batteryInfo.getPercentage()));
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,12 +54,16 @@ public class GeigerSearchActivity extends AppCompatActivity {
         // Setup ViewModel
         viewModel = new ViewModelProvider(this).get(GeigerViewModel.class);
 
+        // Get shared RfidManager
+        rfidManager = QuickStartApplication.getRfidManager();
+
         // Setup views
         editTargetEpc = findViewById(R.id.editTargetEpc);
         btnSearch = findViewById(R.id.btnSearch);
         halfGauge = findViewById(R.id.halfGauge);
         textRssi = findViewById(R.id.textRssi);
         textStats = findViewById(R.id.textStats);
+        textBattery = findViewById(R.id.textBattery);
 
         // Setup HalfGauge with RSSI range (-80 to -20 dBm)
         // Low to high: light grey -> yellow -> orange -> red
@@ -159,6 +177,26 @@ public class GeigerSearchActivity extends AppCompatActivity {
                 viewModel.startSearch(epc, 1); // Memory bank 1 = EPC
             }
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Start battery monitoring if connected
+        if (rfidManager != null && rfidManager.isConnected()) {
+            rfidManager.startBatteryMonitoring(batteryCallback);
+        } else if (textBattery != null) {
+            textBattery.setText("Not Connected");
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop battery monitoring when activity paused
+        if (rfidManager != null) {
+            rfidManager.stopBatteryMonitoring();
+        }
     }
 
     @Override
