@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/scan_state_provider.dart';
 import '../providers/connection_state_provider.dart' as conn_provider;
+import '../providers/permission_provider.dart';
 import '../widgets/reader_list_item.dart';
 import '../widgets/loading_overlay.dart';
 
@@ -17,9 +18,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   @override
   void initState() {
     super.initState();
-    // Auto-start scanning when screen opens
+    // Check permissions and auto-start scanning
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startScan();
+      _checkPermissionsAndScan();
     });
   }
 
@@ -29,6 +30,23 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     final scanNotifier = ref.read(scanStateNotifierProvider.notifier);
     scanNotifier.stopScan();
     super.dispose();
+  }
+
+  Future<void> _checkPermissionsAndScan() async {
+    final permissionService = ref.read(permissionServiceProvider);
+    final hasPermissions = await permissionService.ensurePermissions();
+
+    if (!hasPermissions && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bluetooth and Location permissions are required to scan for readers'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    await _startScan();
   }
 
   Future<void> _startScan() async {
