@@ -37,14 +37,14 @@ The **CS710 QuickStart** app is a production-ready Android application demonstra
 | Component | Status | Details |
 |-----------|--------|---------|
 | MainActivity | ✅ Complete | Home screen with navigation |
-| ScanActivity | ✅ Complete | Reader scanning UI |
-| InventoryActivity | ✅ Complete | Tag inventory with stats |
-| GeigerSearchActivity | ✅ Complete | Tag locating UI |
-| ScanViewModel | ✅ Complete | Scan logic |
+| ScanActivity | ✅ Complete | Reader scanning with loading overlay |
+| InventoryActivity | ✅ Complete | Tag inventory with trigger support |
+| GeigerSearchActivity | ✅ Complete | Tag locating with trigger support |
+| ScanViewModel | ✅ Complete | Scan logic with connection states |
 | InventoryViewModel | ✅ Complete | Inventory logic |
 | GeigerViewModel | ✅ Complete | Geiger logic |
-| UI Layouts | ✅ Complete | 6 XML layouts |
-| **Total** | **✅ Production Ready** | **~1,600 lines** |
+| UI Layouts | ✅ Complete | 7 XML layouts |
+| **Total** | **✅ Production Ready** | **~1,850 lines** |
 
 ---
 
@@ -76,6 +76,7 @@ cs710aquickstart/
 │   │   ├── activity_scan.xml           # Scan screen
 │   │   ├── activity_inventory.xml      # Inventory screen
 │   │   ├── activity_geiger_search.xml  # Geiger screen
+│   │   ├── loading_overlay.xml         # Connection loading overlay
 │   │   ├── item_reader.xml             # Reader list item
 │   │   └── item_tag.xml                # Tag list item
 │   │
@@ -192,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
 
 ### 2. ScanActivity
 
-**File**: `ScanActivity.java` (~150 lines)
+**File**: `ScanActivity.java` (~158 lines)
 
 **Purpose**: Scan for and connect to RFID readers
 
@@ -201,13 +202,16 @@ public class MainActivity extends AppCompatActivity {
 - RecyclerView showing discovered readers
 - Click reader to connect
 - Scan/Stop button
+- **Loading overlay during connection/initialization**
 - Connection status feedback
 - Error handling with Toasts
+- Automatic navigation to inventory when reader ready
 
 **Layout**: `activity_scan.xml`
 - Button for scan control
 - RecyclerView for reader list
 - ProgressBar for scanning indicator
+- Loading overlay with status messages
 
 **ViewModel**: ScanViewModel
 
@@ -278,14 +282,16 @@ public class ScanActivity extends AppCompatActivity {
 
 ### 3. InventoryActivity
 
-**File**: `InventoryActivity.java` (~164 lines)
+**File**: `InventoryActivity.java` (~252 lines)
 
 **Purpose**: Read RFID tags and display statistics
 
 **Key Features**:
 - Start/Stop inventory button
 - RecyclerView showing tag list (EPC, RSSI, count)
-- Real-time statistics display
+- Real-time statistics display (with visibility management)
+- **Battery level monitoring** (displayed in action bar)
+- **Trigger key support** (hardware button controls start/stop)
 - Clear tags button
 - Click tag to navigate to Geiger search
 - **Automatic configuration on load**
@@ -399,7 +405,7 @@ private void onTagClick(RfidTag tag) {
 
 ### 4. GeigerSearchActivity
 
-**File**: `GeigerSearchActivity.java` (~180 lines)
+**File**: `GeigerSearchActivity.java` (~235 lines)
 
 **Purpose**: Locate a specific tag using RSSI proximity
 
@@ -410,6 +416,8 @@ private void onTagClick(RfidTag tag) {
 - Proximity bar (ProgressBar 0-100%)
 - Read count display
 - Visual feedback (color-coded proximity)
+- **Battery level monitoring** (displayed in action bar)
+- **Trigger key support** (hardware button controls start/stop)
 - Error handling
 
 **Layout**: `activity_geiger_search.xml`
@@ -1114,7 +1122,144 @@ public class TagListAdapter extends ListAdapter<RfidTag, TagListAdapter.ViewHold
 
 ## Key Features
 
-### 1. Automatic Configuration
+### 1. Connection Loading Overlay
+
+**Feature**: UI blocking overlay during reader connection and initialization
+
+**When**: Shown automatically during connection flow in ScanActivity
+
+**Flow**:
+1. User clicks reader → Overlay appears with "Connecting to reader..."
+2. BLE connects → Message changes to "Initializing reader..."
+3. Reader fully initialized (battery data available) → Overlay disappears
+4. App navigates to InventoryActivity
+
+**Timeout**: Up to 35 seconds (20s connection + 15s initialization)
+
+**Implementation**: `ScanActivity.java:96-113`, `loading_overlay.xml`
+
+**User Experience**:
+- No UI interaction during connection
+- Clear status messages
+- Prevents premature operations
+- Automatic navigation when ready
+
+### 2. Battery Monitoring
+
+**Feature**: Real-time battery level display in action bar
+
+**Polling**: Every 5 seconds automatically
+
+**Display**: Shows battery percentage and charging status (e.g., "Battery: 85%")
+
+**When**: Starts automatically in `onResume()` of InventoryActivity and GeigerSearchActivity
+
+**Implementation**: `InventoryActivity.java:175-188`
+
+```java
+@Override
+protected void onResume() {
+    super.onResume();
+    if (rfidManager != null && rfidManager.isConnected()) {
+        rfidManager.startBatteryMonitoring(batteryCallback);
+    }
+}
+
+private final BatteryCallback batteryCallback = new BatteryCallback() {
+    @Override
+    public void onBatteryUpdate(BatteryInfo batteryInfo) {
+        runOnUiThread(() -> {
+            String batteryText = "Battery: " + batteryInfo.getLevel() + "%";
+            if (batteryInfo.isCharging()) {
+                batteryText += " (Charging)";
+            }
+            getSupportActionBar().setSubtitle(batteryText);
+        });
+    }
+
+    @Override
+    public void onBatteryError(RfidError error) {
+        // Handle error silently
+    }
+};
+```
+
+### 3. Trigger Key Support
+
+**Feature**: Hardware trigger button on CS710S reader controls start/stop operations
+
+**Mode**: Manual mode (app simulates button clicks)
+
+**Behavior**:
+- **Trigger PRESS** → Clicks "Start" button (only if button shows "Start")
+- **Trigger RELEASE** → Clicks "Stop" button (only if button shows "Stop")
+
+**State Validation**: Prevents spurious actions by checking button text before clicking
+
+**Implementation**: `InventoryActivity.java:193-210`, `GeigerSearchActivity.java:205-222`
+
+```java
+private final TriggerCallback triggerCallback = new TriggerCallback() {
+    @Override
+    public void onTriggerStateChanged(boolean pressed) {
+        runOnUiThread(() -> {
+            if (pressed) {
+                // Only click if button shows "Start"
+                if (btnInventory.getText().toString().equals(getString(R.string.btn_start_inventory))) {
+                    btnInventory.performClick();
+                }
+            } else {
+                // Only click if button shows "Stop"
+                if (btnInventory.getText().toString().equals(getString(R.string.btn_stop_inventory))) {
+                    btnInventory.performClick();
+                }
+            }
+        });
+    }
+};
+
+@Override
+protected void onResume() {
+    super.onResume();
+    if (rfidManager != null && rfidManager.isConnected()) {
+        rfidManager.enableTrigger(triggerCallback, false);  // false = manual mode
+    }
+}
+```
+
+**User Experience**:
+- Natural hardware button control
+- Same validation as soft button clicks
+- Works in both Inventory and Geiger Search activities
+- Prevents starting when already started, stopping when already stopped
+
+### 4. Stats TextView Visibility Management
+
+**Feature**: Statistics TextView only visible when inventory is running
+
+**Behavior**:
+- Hidden when not inventorying
+- Visible when inventory starts
+- Shows real-time stats (unique count, total reads, rate)
+
+**Implementation**: `InventoryActivity.java:138-149`
+
+```java
+// Observe inventory state
+viewModel.isInventorying().observe(this, inventorying -> {
+    if (inventorying) {
+        btnInventory.setText(R.string.btn_stop_inventory);
+        textStats.setVisibility(View.VISIBLE);  // Show stats
+    } else {
+        btnInventory.setText(R.string.btn_start_inventory);
+        if (textStats.getText().toString().equals(getString(R.string.stats_default))) {
+            textStats.setVisibility(View.GONE);  // Hide if no data
+        }
+    }
+});
+```
+
+### 5. Automatic Configuration
 
 **When**: Applied automatically when InventoryActivity loads and reader is connected
 
@@ -1138,7 +1283,7 @@ public class TagListAdapter extends ListAdapter<RfidTag, TagListAdapter.ViewHold
 - No manual configuration needed
 - Consistent reader behavior
 
-### 2. RSSI Display in dBm
+### 6. RSSI Display in dBm
 
 **Feature**: All RSSI values displayed as negative dBm values
 
@@ -1153,7 +1298,7 @@ public class TagListAdapter extends ListAdapter<RfidTag, TagListAdapter.ViewHold
 
 **Implementation**: SDK wrapper handles negation
 
-### 3. CSL Logo Branding
+### 7. CSL Logo Branding
 
 **Feature**: CSL company logo used as app icon and splash screen
 
@@ -1161,7 +1306,7 @@ public class TagListAdapter extends ListAdapter<RfidTag, TagListAdapter.ViewHold
 
 **Result**: Professional branding matching CSL products
 
-### 4. Tag Click Navigation
+### 8. Tag Click Navigation
 
 **Feature**: Click any tag in inventory to start Geiger search
 
@@ -1174,7 +1319,7 @@ public class TagListAdapter extends ListAdapter<RfidTag, TagListAdapter.ViewHold
 
 **Implementation**: `InventoryActivity.java:120-125`
 
-### 5. Error Handling
+### 9. Error Handling
 
 **Methods**:
 - Toast notifications for errors
@@ -1189,7 +1334,7 @@ public class TagListAdapter extends ListAdapter<RfidTag, TagListAdapter.ViewHold
 - Inventory errors
 - Search errors
 
-### 6. Empty States
+### 10. Empty States
 
 **Implementation**:
 - "No tags found" message when tag list is empty
@@ -1576,17 +1721,25 @@ None currently reported.
 
 The **CS710 QuickStart** app provides a complete, production-ready Android application demonstrating RFID operations with the CSL CS710S reader. Key features:
 
-✅ **Complete Workflows**: Scan, connect, inventory, Geiger search
+✅ **Complete Workflows**: Scan, connect, inventory, Geiger search with loading overlay
 ✅ **MVVM Architecture**: Clean, testable, maintainable code
 ✅ **Modern Android**: LiveData, ViewModel, RecyclerView, Material Design
-✅ **Production Quality**: Error handling, auto-configuration, branding
-✅ **User Friendly**: Intuitive UI, real-time updates, clear feedback
+✅ **Hardware Integration**: Battery monitoring, trigger key support
+✅ **Production Quality**: Error handling, auto-configuration, branding, state management
+✅ **User Friendly**: Intuitive UI, real-time updates, clear feedback, hardware button control
+
+**New in v2.0**:
+- Connection loading overlay with initialization status
+- Real-time battery monitoring (5-second polling)
+- Hardware trigger key support (manual mode with state validation)
+- Stats TextView visibility management
+- Enhanced connection flow (CONNECTING → INITIALIZING → READY)
 
 **Status**: ✅ **PRODUCTION READY**
 
 ---
 
-**Document Version**: 1.0.0
+**Document Version**: 2.0.0
 **Last Updated**: January 2025
-**Total Lines of Code**: ~1,600 lines
-**Total Files**: 10 Java files + 6 XML layouts
+**Total Lines of Code**: ~1,850 lines
+**Total Files**: 10 Java files + 7 XML layouts

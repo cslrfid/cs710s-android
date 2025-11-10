@@ -37,15 +37,16 @@ The **csl-rfid-android-sdk** module provides a clean, modern Android wrapper aro
 
 | Component | Status | Lines |
 |-----------|--------|-------|
-| RfidManager | ✅ Complete | 407 |
-| RfidConnectionManager | ✅ Complete | 329 |
+| RfidManager | ✅ Complete | 778 |
+| RfidConnectionManager | ✅ Complete | 443 |
 | RfidInventoryManager | ✅ Complete | 345 |
 | RfidGeigerManager | ✅ Complete | 330 |
 | RfidConfigurationManager | ✅ Complete | 165 |
-| Data Models | ✅ Complete | ~500 |
-| Callbacks | ✅ Complete | ~150 |
+| BarcodeScanManager | ✅ Complete | 210 |
+| Data Models | ✅ Complete | ~650 |
+| Callbacks | ✅ Complete | ~230 |
 | Internal Utilities | ✅ Complete | ~164 |
-| **Total** | **✅ Production Ready** | **~2,500** |
+| **Total** | **✅ Production Ready** | **~3,300** |
 
 ---
 
@@ -89,15 +90,18 @@ The **csl-rfid-android-sdk** module provides a clean, modern Android wrapper aro
 
 ```
 com.csl.rfidsdk/
-├── RfidManager.java                    # Main API entry point (407 lines)
+├── RfidManager.java                    # Main API entry point (778 lines)
 ├── RfidManagerBuilder.java             # Builder pattern for setup (58 lines)
 │
-├── callbacks/                          # Callback Interfaces (5 files)
+├── callbacks/                          # Callback Interfaces (8 files)
 │   ├── RfidScanCallback.java           # Reader scan events
-│   ├── RfidConnectionCallback.java     # Connection events
+│   ├── RfidConnectionCallback.java     # Connection events (with onReaderReady)
 │   ├── RfidInventoryCallback.java      # Tag inventory events
 │   ├── RfidGeigerCallback.java         # Geiger search events
-│   └── RfidConfigurationCallback.java  # Configuration events
+│   ├── RfidConfigurationCallback.java  # Configuration events
+│   ├── BatteryCallback.java            # Battery monitoring events
+│   ├── BarcodeScanCallback.java        # Barcode scan events
+│   └── TriggerCallback.java            # Trigger key events
 │
 ├── config/                             # Configuration Enums (4 files)
 │   ├── RfidRegion.java                 # FCC, ETSI, Japan, etc.
@@ -109,19 +113,23 @@ com.csl.rfidsdk/
 │   ├── SdkBridge.java                  # SDK wrapper (70 lines)
 │   └── ThreadManager.java              # Thread management (94 lines)
 │
-├── managers/                           # Core Managers (4 files)
-│   ├── RfidConnectionManager.java      # BLE scan/connect (329 lines)
+├── managers/                           # Core Managers (5 files)
+│   ├── RfidConnectionManager.java      # BLE scan/connect (443 lines)
 │   ├── RfidInventoryManager.java       # Tag inventory (345 lines)
 │   ├── RfidGeigerManager.java          # Tag locating (330 lines)
-│   └── RfidConfigurationManager.java   # Reader config (165 lines)
+│   ├── RfidConfigurationManager.java   # Reader config (165 lines)
+│   └── BarcodeScanManager.java         # Barcode scanning (210 lines)
 │
-└── models/                             # Data Models (7 files)
+└── models/                             # Data Models (10 files)
     ├── RfidReader.java                 # Reader device info
     ├── RfidTag.java                    # Tag data (EPC, RSSI, etc.)
     ├── RfidError.java                  # Error information
     ├── RfidConfiguration.java          # Reader settings
     ├── RfidInventoryStats.java         # Inventory statistics
-    └── RfidGeigerStats.java            # Geiger search statistics
+    ├── RfidGeigerStats.java            # Geiger search statistics
+    ├── BatteryInfo.java                # Battery status data
+    ├── BarcodeData.java                # Barcode scan result
+    └── BarcodeStats.java               # Barcode statistics
 ```
 
 ---
@@ -169,6 +177,19 @@ public boolean isInventorying()
 public void startGeigerSearch(String epc, int bank, RfidGeigerCallback callback)
 public void stopGeigerSearch()
 public boolean isSearching()
+
+// Battery Monitoring
+public void startBatteryMonitoring(BatteryCallback callback)
+public void stopBatteryMonitoring()
+
+// Barcode Scanning
+public void startBarcodeScan(BarcodeScanCallback callback)
+public void stopBarcodeScan()
+public boolean isBarcodeScanActive()
+
+// Trigger Key Support
+public void enableTrigger(TriggerCallback callback, boolean autoInventory)
+public void disableTrigger()
 
 // Lifecycle
 public void release()
@@ -681,6 +702,103 @@ Region configuration is intentionally skipped because:
 - Passing enum ordinal causes ArrayIndexOutOfBoundsException
 - Reader uses its factory default region, which is correct for the hardware
 
+### 5. BarcodeScanManager
+
+**File**: `managers/BarcodeScanManager.java` (210 lines)
+
+**Purpose**: Manages barcode scanning operations
+
+**Key Features**:
+- 1D and 2D barcode scanning
+- Real-time scan results
+- Scan statistics (total scans, unique barcodes)
+- Automatic duplicate tracking
+- Error handling
+
+**SDK Integration**:
+
+| Operation | SDK Method | Notes |
+|-----------|------------|-------|
+| Start scan | `sendCommandSetContinuousModeAlertSound(true)` | Enable barcode scanner |
+| Poll for scans | `getBarcodeOnePending()` | Check for new barcodes |
+| Get barcode | `getBarcodeOne()` | Retrieve barcode data |
+| Stop scan | `sendCommandSetContinuousModeAlertSound(false)` | Disable barcode scanner |
+
+**Barcode Scanning Implementation**:
+
+```java
+public void startBarcodeScan(BarcodeScanCallback callback) {
+    this.callback = callback;
+    this.scanning = true;
+    this.scannedBarcodes.clear();
+    this.totalScans = 0;
+    this.startTime = System.currentTimeMillis();
+
+    threadManager.executeOnBackground(() -> {
+        CsLibrary4A sdk = sdkBridge.getSdk();
+
+        // Enable barcode scanner
+        sdk.sendCommandSetContinuousModeAlertSound(true);
+
+        // Poll for barcode data
+        barcodePollRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!scanning) return;
+
+                // Check if barcode data is pending
+                if (sdk.getBarcodeOnePending()) {
+                    String barcode = sdk.getBarcodeOne();
+
+                    if (barcode != null && !barcode.isEmpty()) {
+                        processBarcodeData(barcode);
+                    }
+                }
+
+                // Continue polling
+                if (scanning) {
+                    threadManager.executeOnMainDelayed(() -> {
+                        if (scanning) {
+                            threadManager.executeOnBackground(this);
+                        }
+                    }, 100);
+                }
+            }
+        };
+
+        threadManager.executeOnBackground(barcodePollRunnable);
+    });
+}
+
+private void processBarcodeData(String barcode) {
+    totalScans++;
+
+    // Track unique barcodes
+    if (!scannedBarcodes.contains(barcode)) {
+        scannedBarcodes.add(barcode);
+    }
+
+    // Build BarcodeData
+    BarcodeData barcodeData = new BarcodeData(
+        barcode,
+        System.currentTimeMillis()
+    );
+
+    // Build statistics
+    BarcodeStats stats = new BarcodeStats.Builder()
+        .totalScans(totalScans)
+        .uniqueBarcodes(scannedBarcodes.size())
+        .elapsedTimeMs(System.currentTimeMillis() - startTime)
+        .build();
+
+    // Fire callbacks
+    threadManager.executeOnMain(() -> {
+        callback.onBarcodeScanned(barcodeData);
+        callback.onStatisticsUpdate(stats);
+    });
+}
+```
+
 ---
 
 ## Data Models
@@ -899,6 +1017,76 @@ public class RfidError {
     public String getMessage()
     public ErrorType getType()
     public Throwable getCause()
+}
+```
+
+### BatteryInfo
+
+**File**: `models/BatteryInfo.java`
+
+**Purpose**: Battery status information
+
+```java
+public class BatteryInfo {
+    private final int level;           // Battery level (0-100%)
+    private final boolean charging;    // Is device charging
+    private final long timestamp;      // Reading timestamp
+
+    // Static factory method
+    public static BatteryInfo fromSdk(CsLibrary4A sdk)
+
+    // Getters
+    public int getLevel()
+    public boolean isCharging()
+    public long getTimestamp()
+    public boolean isValid()           // Checks if level is valid (0-100)
+}
+```
+
+### BarcodeData
+
+**File**: `models/BarcodeData.java`
+
+**Purpose**: Barcode scan result
+
+```java
+public class BarcodeData {
+    private final String barcode;      // Barcode value
+    private final long timestamp;      // Scan timestamp
+
+    // Constructor
+    public BarcodeData(String barcode, long timestamp)
+
+    // Getters
+    public String getBarcode()
+    public long getTimestamp()
+}
+```
+
+### BarcodeStats
+
+**File**: `models/BarcodeStats.java`
+
+**Purpose**: Barcode scanning statistics
+
+```java
+public class BarcodeStats {
+    private final int totalScans;       // Total barcode scans
+    private final int uniqueBarcodes;   // Number of unique barcodes
+    private final long elapsedTimeMs;   // Elapsed time
+
+    // Builder pattern
+    public static class Builder {
+        public Builder totalScans(int count)
+        public Builder uniqueBarcodes(int count)
+        public Builder elapsedTimeMs(long elapsed)
+        public BarcodeStats build()
+    }
+
+    // Getters
+    public int getTotalScans()
+    public int getUniqueBarcodes()
+    public long getElapsedTimeMs()
 }
 ```
 
@@ -1204,11 +1392,20 @@ public interface RfidScanCallback {
 
 ```java
 public interface RfidConnectionCallback {
-    void onConnected(RfidReader reader);
-    void onConnectionFailed(RfidError error);
-    void onDisconnected();
+    void onConnecting();                      // Connection initiated
+    void onConnected(RfidReader reader);      // BLE connected
+    void onReaderReady(RfidReader reader);    // Fully initialized (battery data available)
+    void onConnectionFailed(RfidError error); // Connection failed
+    void onDisconnected(RfidReader reader, RfidError error); // Disconnected (error may be null)
 }
 ```
+
+**Connection Flow**:
+1. `onConnecting()` - Connection initiated
+2. `onConnected()` - BLE connection established
+3. `onReaderReady()` - Reader fully initialized (15s max wait for battery data)
+4. (operations can begin)
+5. `onDisconnected()` - Connection lost or user-initiated disconnect
 
 #### RfidInventoryCallback
 
@@ -1240,6 +1437,41 @@ public interface RfidConfigurationCallback {
     void onConfigurationFailed(RfidError error);
 }
 ```
+
+#### BatteryCallback
+
+```java
+public interface BatteryCallback {
+    void onBatteryUpdate(BatteryInfo batteryInfo);
+    void onBatteryError(RfidError error);
+}
+```
+
+**Usage**: Start monitoring with `startBatteryMonitoring()`, polls every 5 seconds
+
+#### BarcodeScanCallback
+
+```java
+public interface BarcodeScanCallback {
+    void onBarcodeScanned(BarcodeData data);
+    void onStatisticsUpdate(BarcodeStats stats);
+    void onScanError(RfidError error);
+}
+```
+
+#### TriggerCallback
+
+```java
+public interface TriggerCallback {
+    void onTriggerStateChanged(boolean pressed);
+}
+```
+
+**Usage**: Enable with `enableTrigger(callback, autoInventory)` where:
+- `pressed = true`: Trigger key pressed down
+- `pressed = false`: Trigger key released
+- `autoInventory = false`: Manual mode (app handles events)
+- `autoInventory = true`: Auto mode (SDK starts/stops inventory automatically)
 
 ---
 
@@ -1609,6 +1841,185 @@ public class InventoryActivity extends AppCompatActivity {
 
 **Benefit**: Efficient polling without busy-waiting
 
+### 6. Reader Initialization Wait
+
+**Why**: Reader needs time to initialize after BLE connection (battery data availability)
+
+**How**: `waitForReaderReady()` polls battery every 200ms for up to 15s
+
+**Benefit**: Ensures reader is fully operational before allowing operations
+
+---
+
+## Advanced Features
+
+### Battery Monitoring
+
+Monitor reader battery level with automatic 5-second polling:
+
+```java
+rfidManager.startBatteryMonitoring(new BatteryCallback() {
+    @Override
+    public void onBatteryUpdate(BatteryInfo batteryInfo) {
+        // Battery info updated every 5 seconds
+        int level = batteryInfo.getLevel();  // 0-100%
+        boolean charging = batteryInfo.isCharging();
+
+        Log.d("Battery", "Level: " + level + "%, Charging: " + charging);
+    }
+
+    @Override
+    public void onBatteryError(RfidError error) {
+        Log.e("Battery", "Error: " + error.getMessage());
+    }
+});
+
+// Stop monitoring when done
+rfidManager.stopBatteryMonitoring();
+```
+
+**Note**: Battery monitoring is independent and does not interfere with RFID operations.
+
+### Barcode Scanning
+
+Scan 1D/2D barcodes using the reader's built-in barcode scanner:
+
+```java
+rfidManager.startBarcodeScan(new BarcodeScanCallback() {
+    @Override
+    public void onBarcodeScanned(BarcodeData data) {
+        // New barcode scanned
+        String barcode = data.getBarcode();
+        Log.d("Barcode", "Scanned: " + barcode);
+    }
+
+    @Override
+    public void onStatisticsUpdate(BarcodeStats stats) {
+        // Statistics updated
+        Log.d("Barcode", "Total: " + stats.getTotalScans() +
+              ", Unique: " + stats.getUniqueBarcodes());
+    }
+
+    @Override
+    public void onScanError(RfidError error) {
+        Log.e("Barcode", "Error: " + error.getMessage());
+    }
+});
+
+// Stop scanning when done
+rfidManager.stopBarcodeScan();
+```
+
+### Trigger Key Support
+
+Use the hardware trigger button to control operations:
+
+**Manual Mode** (recommended - app handles button clicks):
+
+```java
+rfidManager.enableTrigger(new TriggerCallback() {
+    @Override
+    public void onTriggerStateChanged(boolean pressed) {
+        runOnUiThread(() -> {
+            if (pressed) {
+                // Trigger pressed - simulate "Start" button click
+                if (btnInventory.getText().equals("Start Inventory")) {
+                    btnInventory.performClick();
+                }
+            } else {
+                // Trigger released - simulate "Stop" button click
+                if (btnInventory.getText().equals("Stop Inventory")) {
+                    btnInventory.performClick();
+                }
+            }
+        });
+    }
+}, false); // false = manual mode
+
+// Disable when done
+rfidManager.disableTrigger();
+```
+
+**Auto Mode** (SDK controls inventory directly):
+
+```java
+// In auto mode, SDK starts/stops inventory automatically
+rfidManager.enableTrigger(new TriggerCallback() {
+    @Override
+    public void onTriggerStateChanged(boolean pressed) {
+        // Optional: Update UI to reflect trigger state
+        if (pressed) {
+            btnInventory.setText("Stop Inventory");
+        } else {
+            btnInventory.setText("Start Inventory");
+        }
+    }
+}, true); // true = auto mode
+```
+
+**Key Points**:
+- Manual mode: App controls what happens on trigger press/release
+- Auto mode: SDK automatically starts/stops inventory
+- Trigger callback must be registered on main thread (SDK requirement)
+- State-based logic prevents spurious actions (check button text before clicking)
+
+### Enhanced Connection Flow
+
+The enhanced connection flow includes reader initialization:
+
+```java
+rfidManager.connect(reader, new RfidConnectionCallback() {
+    @Override
+    public void onConnecting() {
+        // Show "Connecting..." UI
+        showLoadingOverlay("Connecting to reader...");
+    }
+
+    @Override
+    public void onConnected(RfidReader reader) {
+        // BLE connected, waiting for reader initialization
+        updateLoadingMessage("Initializing reader...");
+    }
+
+    @Override
+    public void onReaderReady(RfidReader reader) {
+        // Reader fully initialized (battery data available)
+        hideLoadingOverlay();
+        Toast.makeText(this, "Reader ready!", Toast.LENGTH_SHORT).show();
+
+        // Safe to start operations now
+        navigateToInventoryScreen();
+    }
+
+    @Override
+    public void onConnectionFailed(RfidError error) {
+        hideLoadingOverlay();
+        Toast.makeText(this, "Connection failed: " + error.getMessage(),
+                      Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onDisconnected(RfidReader reader, RfidError error) {
+        if (error != null) {
+            Toast.makeText(this, "Connection lost: " + error.getMessage(),
+                          Toast.LENGTH_LONG).show();
+        }
+    }
+});
+```
+
+**Connection States**:
+1. **DISCONNECTED** - No connection
+2. **CONNECTING** - BLE connection in progress (onConnecting)
+3. **CONNECTED** - BLE connected (onConnected)
+4. **INITIALIZING** - Waiting for battery data (up to 15s)
+5. **READY** - Fully operational (onReaderReady)
+
+**Timeouts**:
+- BLE connection: 20 seconds
+- Reader initialization: 15 seconds
+- Total connection time: Up to 35 seconds
+
 ---
 
 ## Conclusion
@@ -1619,14 +2030,15 @@ The **csl-rfid-android-sdk** module provides a production-ready, clean API for C
 ✅ **Thread Safety**: Proper background/main thread management
 ✅ **Error Handling**: Comprehensive error reporting via callbacks
 ✅ **Modern Android**: MVVM-compatible, LiveData-friendly
-✅ **Complete Features**: Scanning, connection, inventory, Geiger search, configuration
+✅ **Complete Features**: RFID inventory, Geiger search, barcode scanning, battery monitoring, trigger support
+✅ **Advanced Operations**: Reader initialization, hardware trigger integration
 ✅ **Production Quality**: Tested, documented, and ready for integration
 
 **Status**: ✅ **PRODUCTION READY**
 
 ---
 
-**Document Version**: 1.0.0
+**Document Version**: 2.0.0
 **Last Updated**: January 2025
-**Total Lines of Code**: ~2,500 lines
-**Total Files**: 23 files
+**Total Lines of Code**: ~3,300 lines
+**Total Files**: 28 files (8 callbacks, 5 managers, 10 models, 5 other)
