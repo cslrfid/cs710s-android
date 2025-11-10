@@ -61,11 +61,11 @@
         android:id="@+id/textStats"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/stats_format"
         android:textSize="14sp"
         android:padding="16dp"
         android:background="@android:color/darker_gray"
-        android:textColor="@android:color/white" />
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/textEmpty"

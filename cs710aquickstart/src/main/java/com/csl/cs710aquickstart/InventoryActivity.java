@@ -94,8 +94,9 @@ public class InventoryActivity extends AppCompatActivity {
         viewModel.getStatsText().observe(this, statsText -> {
             if (statsText != null && !statsText.isEmpty()) {
                 textStats.setText(statsText);
+                textStats.setVisibility(View.VISIBLE);
             } else {
-                textStats.setText("");
+                textStats.setVisibility(View.GONE);
             }
         });
 
@@ -150,7 +151,7 @@ public class InventoryActivity extends AppCompatActivity {
         // Clear button
         btnClear.setOnClickListener(v -> {
             viewModel.clearItems();
-            textStats.setText("");
+            textStats.setVisibility(View.GONE);
         });
     }
 
