@@ -26,6 +26,7 @@ public class RfidInventoryManager {
 
     private boolean inventorying = false;
     private RfidInventoryCallback callback;
+    private RfidInventoryCallback lastInventoryCallback;  // Saved for auto-inventory mode
     private RfidConfiguration configuration;
 
     private final Map<String, Integer> tagCounts = new HashMap<>();
@@ -46,6 +47,7 @@ public class RfidInventoryManager {
      */
     public void startInventory(RfidInventoryCallback callback) {
         this.callback = callback;
+        this.lastInventoryCallback = callback;  // Save for auto-inventory mode
         this.inventorying = true;
         this.startTime = System.currentTimeMillis();
         this.totalReads = 0;
@@ -289,6 +291,16 @@ public class RfidInventoryManager {
 
     public boolean isInventorying() {
         return inventorying;
+    }
+
+    /**
+     * Get the last inventory callback that was used.
+     * Used by auto-inventory mode to restart inventory with the same callback.
+     *
+     * @return The last RfidInventoryCallback, or null if no inventory has been started
+     */
+    public RfidInventoryCallback getLastInventoryCallback() {
+        return lastInventoryCallback;
     }
 
     public void applyConfiguration(RfidConfiguration configuration) {

@@ -19,6 +19,13 @@ public interface RfidConnectionCallback {
     void onConnected(RfidReader reader);
 
     /**
+     * Called when reader is fully initialized and ready for operations.
+     * This fires after onConnected() when battery data is available.
+     * @param reader The ready RFID reader
+     */
+    void onReaderReady(RfidReader reader);
+
+    /**
      * Called when disconnected from the reader
      * @param reader The disconnected reader
      * @param error The error that caused disconnection, or null if intentional

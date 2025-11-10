@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.csl.cs710aquickstart.viewmodels.GeigerViewModel;
 import com.csl.rfidsdk.RfidManager;
 import com.csl.rfidsdk.callbacks.BatteryCallback;
+import com.csl.rfidsdk.callbacks.TriggerCallback;
 import com.csl.rfidsdk.models.BatteryInfo;
 import com.ekn.gruzer.gaugelibrary.HalfGauge;
 import com.ekn.gruzer.gaugelibrary.Range;
@@ -43,6 +44,25 @@ public class GeigerSearchActivity extends AppCompatActivity {
             if (textBattery != null && batteryInfo != null) {
                 textBattery.setText(String.format("Battery: %d%%", batteryInfo.getPercentage()));
             }
+        }
+    };
+
+    private final TriggerCallback triggerCallback = new TriggerCallback() {
+        @Override
+        public void onTriggerStateChanged(boolean pressed) {
+            runOnUiThread(() -> {
+                if (pressed) {
+                    // Only click if button shows "Search" (not currently searching)
+                    if (btnSearch.getText().toString().equals(getString(R.string.btn_search))) {
+                        btnSearch.performClick();
+                    }
+                } else {
+                    // Only click if button shows "Stop Search" (currently searching)
+                    if (btnSearch.getText().toString().equals(getString(R.string.btn_stop_search))) {
+                        btnSearch.performClick();
+                    }
+                }
+            });
         }
     };
 
@@ -185,6 +205,10 @@ public class GeigerSearchActivity extends AppCompatActivity {
         // Start battery monitoring if connected
         if (rfidManager != null && rfidManager.isConnected()) {
             rfidManager.startBatteryMonitoring(batteryCallback);
+
+            // Enable trigger key without auto-inventory (manual control for geiger search)
+            // The callback will handle starting/stopping geiger search operations
+            rfidManager.enableTrigger(triggerCallback, false);
         } else if (textBattery != null) {
             textBattery.setText("Not Connected");
         }
@@ -196,6 +220,8 @@ public class GeigerSearchActivity extends AppCompatActivity {
         // Stop battery monitoring when activity paused
         if (rfidManager != null) {
             rfidManager.stopBatteryMonitoring();
+            // Disable trigger monitoring
+            rfidManager.disableTrigger();
         }
     }
 

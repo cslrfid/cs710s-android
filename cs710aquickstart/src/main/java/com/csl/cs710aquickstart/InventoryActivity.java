@@ -18,6 +18,7 @@ import com.csl.cs710aquickstart.viewmodels.InventoryViewModel;
 import com.csl.rfidsdk.RfidManager;
 import com.csl.rfidsdk.callbacks.BatteryCallback;
 import com.csl.rfidsdk.callbacks.RfidConfigurationCallback;
+import com.csl.rfidsdk.callbacks.TriggerCallback;
 import com.csl.rfidsdk.config.RfidInventoryMode;
 import com.csl.rfidsdk.config.RfidTarget;
 import com.csl.rfidsdk.models.BatteryInfo;
@@ -45,6 +46,25 @@ public class InventoryActivity extends AppCompatActivity {
             if (textBattery != null && batteryInfo != null) {
                 textBattery.setText(String.format("Battery: %d%%", batteryInfo.getPercentage()));
             }
+        }
+    };
+
+    private final TriggerCallback triggerCallback = new TriggerCallback() {
+        @Override
+        public void onTriggerStateChanged(boolean pressed) {
+            runOnUiThread(() -> {
+                if (pressed) {
+                    // Only click if button shows "Start" (not currently scanning)
+                    if (btnInventory.getText().toString().equals(getString(R.string.btn_start_inventory))) {
+                        btnInventory.performClick();
+                    }
+                } else {
+                    // Only click if button shows "Stop" (currently scanning)
+                    if (btnInventory.getText().toString().equals(getString(R.string.btn_stop_inventory))) {
+                        btnInventory.performClick();
+                    }
+                }
+            });
         }
     };
 
@@ -204,6 +224,10 @@ public class InventoryActivity extends AppCompatActivity {
         // Start battery monitoring if connected
         if (rfidManager != null && rfidManager.isConnected()) {
             rfidManager.startBatteryMonitoring(batteryCallback);
+
+            // Enable trigger key with manual mode
+            // Trigger callback will simulate button clicks based on button state
+            rfidManager.enableTrigger(triggerCallback, false);
         } else if (textBattery != null) {
             textBattery.setText("Not Connected");
         }
@@ -215,6 +239,8 @@ public class InventoryActivity extends AppCompatActivity {
         // Stop battery monitoring when activity paused
         if (rfidManager != null) {
             rfidManager.stopBatteryMonitoring();
+            // Disable trigger monitoring
+            rfidManager.disableTrigger();
         }
     }
 

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -31,6 +32,8 @@ public class ScanActivity extends AppCompatActivity {
     private TextView textConnectedReaderAddress;
     private CardView cardConnectedReader;
     private RecyclerView recyclerView;
+    private FrameLayout loadingOverlay;
+    private TextView textLoadingMessage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +52,8 @@ public class ScanActivity extends AppCompatActivity {
         textConnectedReaderAddress = findViewById(R.id.textConnectedReaderAddress);
         cardConnectedReader = findViewById(R.id.cardConnectedReader);
         recyclerView = findViewById(R.id.recyclerView);
+        loadingOverlay = findViewById(R.id.loadingOverlay);
+        textLoadingMessage = findViewById(R.id.textLoadingMessage);
 
         // Setup RecyclerView
         adapter = new ReaderListAdapter(this::onReaderClick);
@@ -90,14 +95,19 @@ public class ScanActivity extends AppCompatActivity {
         // Observe connection state
         viewModel.getConnectionState().observe(this, state -> {
             if (state == ScanViewModel.ConnectionState.CONNECTING) {
-                Toast.makeText(this, R.string.connecting, Toast.LENGTH_SHORT).show();
-            } else if (state == ScanViewModel.ConnectionState.CONNECTED) {
-                Toast.makeText(this, R.string.connected, Toast.LENGTH_SHORT).show();
+                loadingOverlay.setVisibility(View.VISIBLE);
+                textLoadingMessage.setText("Connecting to reader...");
+            } else if (state == ScanViewModel.ConnectionState.INITIALIZING) {
+                textLoadingMessage.setText("Initializing reader...");
+            } else if (state == ScanViewModel.ConnectionState.READY) {
+                loadingOverlay.setVisibility(View.GONE);
+                Toast.makeText(this, "Reader ready!", Toast.LENGTH_SHORT).show();
                 updateConnectionStatus();
                 // Navigate to inventory
                 startActivity(new Intent(this, InventoryActivity.class));
                 finish();
             } else if (state == ScanViewModel.ConnectionState.DISCONNECTED) {
+                loadingOverlay.setVisibility(View.GONE);
                 updateConnectionStatus();
             }
         });

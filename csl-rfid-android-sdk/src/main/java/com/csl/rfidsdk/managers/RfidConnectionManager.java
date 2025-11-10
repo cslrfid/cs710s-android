@@ -10,6 +10,7 @@ import com.csl.rfidsdk.callbacks.RfidConnectionCallback;
 import com.csl.rfidsdk.callbacks.RfidScanCallback;
 import com.csl.rfidsdk.internal.SdkBridge;
 import com.csl.rfidsdk.internal.ThreadManager;
+import com.csl.rfidsdk.models.BatteryInfo;
 import com.csl.rfidsdk.models.RfidError;
 import com.csl.rfidsdk.models.RfidReader;
 
@@ -284,6 +285,10 @@ public class RfidConnectionManager {
                                             callback.onConnected(connectedReader)
                                     );
                                 }
+
+                                // Wait for reader to be fully initialized (battery data available)
+                                waitForReaderReady(connectedReader, callback);
+
                                 return; // Exit polling loop
                             }
 
@@ -372,6 +377,58 @@ public class RfidConnectionManager {
 
     public RfidReader getConnectedReader() {
         return connectedReader;
+    }
+
+    /**
+     * Wait for reader to be fully initialized and ready for operations.
+     * Polls battery data every 200ms for up to 15 seconds.
+     * Fires onReaderReady() callback when battery data is available or on timeout.
+     *
+     * @param reader The connected reader
+     * @param callback The connection callback to fire onReaderReady()
+     */
+    private void waitForReaderReady(RfidReader reader, RfidConnectionCallback callback) {
+        int maxWaitMs = 15000; // 15 second timeout
+        int pollIntervalMs = 200;
+        int maxAttempts = maxWaitMs / pollIntervalMs; // 75 attempts
+
+        log("Waiting for reader to be ready (battery data available)...");
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                // Query battery to check if reader is ready
+                BatteryInfo batteryInfo = BatteryInfo.fromSdk(sdkBridge.getSdk());
+
+                if (batteryInfo != null && batteryInfo.isValid()) {
+                    // Battery data available - reader is ready
+                    log("Reader ready after " + (attempt * pollIntervalMs) + "ms - battery data available");
+                    if (callback != null) {
+                        threadManager.executeOnMain(() ->
+                                callback.onReaderReady(reader)
+                        );
+                    }
+                    return;
+                }
+
+                // Wait before next poll
+                Thread.sleep(pollIntervalMs);
+
+            } catch (InterruptedException e) {
+                log("Reader ready check interrupted");
+                break;
+            } catch (Exception e) {
+                log("Error checking battery: " + e.getMessage());
+                // Continue polling despite errors
+            }
+        }
+
+        // Timeout reached - proceed anyway
+        log("Reader ready timeout after " + maxWaitMs + "ms - proceeding without battery data");
+        if (callback != null) {
+            threadManager.executeOnMain(() ->
+                    callback.onReaderReady(reader)
+            );
+        }
     }
 
     private void log(String message) {

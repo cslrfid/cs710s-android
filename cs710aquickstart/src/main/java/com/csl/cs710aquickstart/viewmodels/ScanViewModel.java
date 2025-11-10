@@ -30,7 +30,9 @@ public class ScanViewModel extends AndroidViewModel {
     public enum ConnectionState {
         DISCONNECTED,
         CONNECTING,
-        CONNECTED
+        CONNECTED,      // BLE connected
+        INITIALIZING,   // Waiting for reader to be ready
+        READY           // Fully initialized and ready
     }
 
     public ScanViewModel(@NonNull Application application) {
@@ -106,7 +108,12 @@ public class ScanViewModel extends AndroidViewModel {
 
             @Override
             public void onConnected(RfidReader connectedReader) {
-                connectionStateLiveData.postValue(ConnectionState.CONNECTED);
+                connectionStateLiveData.postValue(ConnectionState.INITIALIZING);
+            }
+
+            @Override
+            public void onReaderReady(RfidReader reader) {
+                connectionStateLiveData.postValue(ConnectionState.READY);
             }
 
             @Override

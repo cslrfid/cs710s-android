@@ -11,6 +11,7 @@ import com.csl.rfidsdk.callbacks.RfidConnectionCallback;
 import com.csl.rfidsdk.callbacks.RfidGeigerCallback;
 import com.csl.rfidsdk.callbacks.RfidInventoryCallback;
 import com.csl.rfidsdk.callbacks.RfidScanCallback;
+import com.csl.rfidsdk.callbacks.TriggerCallback;
 import com.csl.rfidsdk.config.RfidInventoryMode;
 import com.csl.rfidsdk.config.RfidRegion;
 import com.csl.rfidsdk.config.RfidTarget;
@@ -53,6 +54,12 @@ public class RfidManager {
     private Handler batteryHandler;
     private Runnable batteryPollRunnable;
     private volatile boolean batteryMonitoringActive = false;
+
+    // Trigger key monitoring
+    private TriggerCallback triggerCallback;
+    private boolean triggerAutoInventory = false;
+    private boolean lastTriggerState = false;
+    private volatile boolean triggerMonitoringActive = false;
 
     /**
      * Create a new RfidManager with default configuration
@@ -364,6 +371,9 @@ public class RfidManager {
         // Stop battery monitoring
         stopBatteryMonitoring();
 
+        // Disable trigger monitoring
+        disableTrigger();
+
         connectionManager.disconnect();
         threadManager.shutdown();
         sdkBridge.release();
@@ -496,6 +506,180 @@ public class RfidManager {
      */
     public boolean isBatteryMonitoringActive() {
         return batteryMonitoringActive;
+    }
+
+    // ========== Trigger Key Support ==========
+
+    /**
+     * Enable hardware trigger key monitoring.
+     * When enabled, pressing/releasing the trigger key will fire callbacks.
+     *
+     * @param callback Callback to receive trigger state changes (pressed/released)
+     * @param autoInventory If true, automatically start/stop inventory on trigger press/release
+     */
+    public void enableTrigger(TriggerCallback callback, boolean autoInventory) {
+        if (!initialized) {
+            log("Cannot enable trigger - SDK not initialized");
+            return;
+        }
+
+        if (!isConnected()) {
+            log("Cannot enable trigger - not connected to reader");
+            return;
+        }
+
+        this.triggerCallback = callback;
+        this.triggerAutoInventory = autoInventory;
+        this.triggerMonitoringActive = true;
+
+        // Enable trigger reporting on the reader
+        threadManager.executeOnBackground(() -> {
+            try {
+                sdkBridge.getSdk().setTriggerReporting(true);
+                sdkBridge.getSdk().setTriggerReportingCount((short) 0); // Report all trigger events
+                log("Trigger reporting enabled on reader");
+            } catch (Exception e) {
+                log("Error enabling trigger reporting: " + e.getMessage());
+            }
+        });
+
+        // Set up NotificationListener to receive trigger events
+        // MUST run on main thread as per SDK requirements
+        new Handler(Looper.getMainLooper()).post(() -> {
+            try {
+                sdkBridge.getSdk().setNotificationListener(() -> {
+                    if (!triggerMonitoringActive) return;
+
+                    // Query current trigger state on background thread
+                    threadManager.executeOnBackground(() -> {
+                        try {
+                            boolean currentTriggerState = sdkBridge.getSdk().getTriggerButtonStatus();
+
+                            // Check if state actually changed to avoid spurious events
+                            if (currentTriggerState != lastTriggerState) {
+                                lastTriggerState = currentTriggerState;
+
+                                log("Trigger state changed: " + (currentTriggerState ? "PRESSED" : "RELEASED"));
+
+                                // Fire callback on main thread
+                                new Handler(Looper.getMainLooper()).post(() -> {
+                                    if (triggerCallback != null) {
+                                        triggerCallback.onTriggerStateChanged(currentTriggerState);
+                                    }
+
+                                    // Handle auto-inventory mode
+                                    if (triggerAutoInventory) {
+                                        handleAutoInventory(currentTriggerState);
+                                    }
+                                });
+                            }
+                        } catch (Exception e) {
+                            log("Error querying trigger state: " + e.getMessage());
+                        }
+                    });
+                });
+
+                log("Trigger monitoring enabled" + (autoInventory ? " with auto-inventory" : ""));
+            } catch (Exception e) {
+                log("Error setting notification listener: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Disable hardware trigger key monitoring.
+     * Unregisters the NotificationListener and disables trigger reporting.
+     */
+    public void disableTrigger() {
+        if (!initialized) return;
+
+        triggerMonitoringActive = false;
+
+        // Unregister NotificationListener on main thread
+        new Handler(Looper.getMainLooper()).post(() -> {
+            try {
+                sdkBridge.getSdk().setNotificationListener(null);
+                log("NotificationListener unregistered");
+            } catch (Exception e) {
+                log("Error unregistering notification listener: " + e.getMessage());
+            }
+        });
+
+        // Disable trigger reporting on reader
+        if (isConnected()) {
+            threadManager.executeOnBackground(() -> {
+                try {
+                    sdkBridge.getSdk().setTriggerReporting(false);
+                    log("Trigger reporting disabled on reader");
+                } catch (Exception e) {
+                    log("Error disabling trigger reporting: " + e.getMessage());
+                }
+            });
+        }
+
+        triggerCallback = null;
+        triggerAutoInventory = false;
+        lastTriggerState = false;
+        log("Trigger monitoring disabled");
+    }
+
+    /**
+     * Get the current trigger key state (synchronous query).
+     * This method blocks briefly while querying the reader.
+     *
+     * @return true if trigger is currently pressed, false if released
+     */
+    public boolean getTriggerState() {
+        if (!initialized || !isConnected()) {
+            return false;
+        }
+
+        try {
+            return sdkBridge.getSdk().getTriggerButtonStatus();
+        } catch (Exception e) {
+            log("Error getting trigger state: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if trigger monitoring is currently active
+     * @return true if monitoring, false otherwise
+     */
+    public boolean isTriggerMonitoringActive() {
+        return triggerMonitoringActive;
+    }
+
+    /**
+     * Handle auto-inventory mode logic.
+     * Called when trigger state changes and auto-inventory is enabled.
+     *
+     * @param triggerPressed true if trigger pressed, false if released
+     */
+    private void handleAutoInventory(boolean triggerPressed) {
+        boolean inventoryRunning = isInventorying();
+
+        // State validation to prevent spurious trigger events
+        // Same logic as InventoryRfidiMultiFragment.java lines 416-422
+        if ((inventoryRunning && triggerPressed) || (!inventoryRunning && !triggerPressed)) {
+            log("Auto-inventory: ignoring spurious trigger event (running=" + inventoryRunning + ", pressed=" + triggerPressed + ")");
+            return;
+        }
+
+        if (triggerPressed && !inventoryRunning) {
+            // Start inventory with saved callback from last startInventory() call
+            log("Auto-inventory: starting inventory (trigger pressed)");
+            RfidInventoryCallback lastCallback = inventoryManager.getLastInventoryCallback();
+            if (lastCallback != null) {
+                inventoryManager.startInventory(lastCallback);
+            } else {
+                log("Auto-inventory: no saved inventory callback, cannot start");
+            }
+        } else if (!triggerPressed && inventoryRunning) {
+            // Stop inventory
+            log("Auto-inventory: stopping inventory (trigger released)");
+            inventoryManager.stopInventory();
+        }
     }
 
     // ========== Helper Methods ==========
