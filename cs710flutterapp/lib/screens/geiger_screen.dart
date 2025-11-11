@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/geiger_state_provider.dart';
 import '../providers/connection_state_provider.dart';
-import '../providers/inventory_state_provider.dart';
 import '../utils/formatters.dart';
 
 /// Geiger search screen for locating specific tags
@@ -15,7 +14,18 @@ class GeigerScreen extends ConsumerStatefulWidget {
 
 class _GeigerScreenState extends ConsumerState<GeigerScreen> {
   final TextEditingController _epcController = TextEditingController();
-  int _memoryBank = 1; // 1=EPC, 2=TID, 3=User
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if EPC was passed as argument
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null && args['epc'] != null) {
+        _epcController.text = args['epc'] as String;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -44,7 +54,8 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
     }
 
     final geigerNotifier = ref.read(geigerStateNotifierProvider.notifier);
-    await geigerNotifier.startGeigerSearch(epc, memoryBank: _memoryBank);
+    // Always use EPC memory bank (1)
+    await geigerNotifier.startGeigerSearch(epc, memoryBank: 1);
   }
 
   Future<void> _stopSearch() async {
@@ -56,42 +67,6 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
     _epcController.clear();
     final geigerNotifier = ref.read(geigerStateNotifierProvider.notifier);
     geigerNotifier.clearSearch();
-  }
-
-  void _selectFromInventory() {
-    final rfidState = ref.read(rfidInventoryStateNotifierProvider);
-
-    if (rfidState.tags.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No tags available. Please scan some tags first.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => ListView.builder(
-        itemCount: rfidState.tags.length,
-        itemBuilder: (context, index) {
-          final tag = rfidState.tags[index];
-          return ListTile(
-            title: Text(
-              AppFormatters.formatEpc(tag.epc),
-              style: const TextStyle(fontFamily: 'monospace'),
-            ),
-            subtitle: Text('RSSI: ${AppFormatters.formatRssi(tag.rssi)}'),
-            trailing: Text('Count: ${tag.count}'),
-            onTap: () {
-              _epcController.text = tag.epc;
-              Navigator.pop(context);
-            },
-          );
-        },
-      ),
-    );
   }
 
   @override
@@ -119,11 +94,6 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
           children: [
             // EPC Input
             _buildEpcInput(geigerState),
-
-            const SizedBox(height: 16),
-
-            // Memory Bank Selection
-            _buildMemoryBankSelection(geigerState),
 
             const SizedBox(height: 16),
 
@@ -158,45 +128,11 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
         TextField(
           controller: _epcController,
           enabled: !geigerState.isSearching,
-          decoration: InputDecoration(
-            hintText: 'Enter EPC (e.g., E280117...',
-            border: const OutlineInputBorder(),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.list),
-              onPressed: geigerState.isSearching ? null : _selectFromInventory,
-              tooltip: 'Select from inventory',
-            ),
+          decoration: const InputDecoration(
+            hintText: 'Enter EPC (e.g., E280117...)',
+            border: OutlineInputBorder(),
           ),
           style: const TextStyle(fontFamily: 'monospace'),
-        ),
-      ],
-    );
-  }
-
-  /// Build memory bank selection
-  Widget _buildMemoryBankSelection(GeigerState geigerState) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Memory Bank',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(value: 1, label: Text('EPC')),
-            ButtonSegment(value: 2, label: Text('TID')),
-            ButtonSegment(value: 3, label: Text('User')),
-          ],
-          selected: {_memoryBank},
-          onSelectionChanged: geigerState.isSearching
-              ? null
-              : (Set<int> newSelection) {
-                  setState(() {
-                    _memoryBank = newSelection.first;
-                  });
-                },
         ),
       ],
     );

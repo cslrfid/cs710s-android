@@ -112,10 +112,7 @@ class InventoryService {
   /// Start RFID tag inventory
   Future<void> startInventory() async {
     try {
-      // Clear previous results
-      _tags.clear();
-      _rfidTagsController.add([]);
-
+      // Don't clear tags - allow cumulative scanning
       await _rfidService.startInventory();
       _isInventorying = true;
       _rfidInventoryingController.add(true);

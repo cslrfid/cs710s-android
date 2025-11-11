@@ -16,7 +16,7 @@ class MainScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CS710 QuickStart'),
+        title: const Text('CS710S Quick Start'),
         actions: [
           // Battery indicator
           Padding(
@@ -58,7 +58,7 @@ class MainScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'CS710 QuickStart',
+                  'CS710S Quick Start',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -258,7 +258,7 @@ class MainScreen extends ConsumerWidget {
   void _showAboutDialog(BuildContext context) {
     showAboutDialog(
       context: context,
-      applicationName: 'CS710 QuickStart',
+      applicationName: 'CS710S Quick Start',
       applicationVersion: '1.0.0',
       applicationIcon: const Icon(Icons.nfc, size: 48),
       children: [

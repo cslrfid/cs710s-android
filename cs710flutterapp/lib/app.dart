@@ -13,7 +13,7 @@ class CS710FlutterApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: 'CS710 QuickStart',
+      title: 'CS710S Quick Start',
       theme: AppTheme.lightTheme,
       initialRoute: '/',
       routes: {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/inventory_state_provider.dart';
 import '../providers/connection_state_provider.dart';
+import '../providers/scan_state_provider.dart';
+import '../models/rfid_configuration.dart';
 import '../widgets/tag_list_item.dart';
 import '../widgets/stats_card.dart';
 import '../utils/formatters.dart';
@@ -24,6 +26,56 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+
+    // Apply reader configuration when page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyReaderConfiguration();
+    });
+  }
+
+  /// Apply reader configuration when inventory page loads
+  /// Configuration matches cs710aquickstart defaults
+  Future<void> _applyReaderConfiguration() async {
+    final connectionState = ref.read(connectionStateNotifierProvider);
+
+    // Only configure if reader is connected
+    if (!connectionState.isReady) {
+      return;
+    }
+
+    try {
+      // Build configuration using fluent API
+      final config = RfidConfiguration.builder()
+          .powerLevel(300)           // 30.0 dBm
+          .session(1)                // Session 1
+          .target('A')               // Target A
+          .inventoryMode('COMPACT')  // Compact mode
+          .qValue(7)                 // Q = 7
+          .enableBeep(true)          // Enable beep
+          .enableVibrate(true)       // Enable vibrate
+          .build();
+
+      final rfidService = ref.read(rfidServiceProvider);
+      await rfidService.applyConfiguration(config);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reader configured successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Configuration failed: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
@@ -71,6 +123,15 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
   void _clearBarcodes() {
     final notifier = ref.read(barcodeInventoryStateNotifierProvider.notifier);
     notifier.clearBarcodes();
+  }
+
+  void _navigateToLocateTag(String epc) {
+    // Navigate to geiger screen with selected EPC
+    Navigator.pushNamed(
+      context,
+      '/geiger',
+      arguments: {'epc': epc},
+    );
   }
 
   void _showSortOptions() {
@@ -184,9 +245,6 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
               'Read Rate': rfidState.stats!.readRate > 0
                   ? AppFormatters.formatReadRate(rfidState.stats!.readRate)
                   : 'N/A',
-              'Elapsed Time': AppFormatters.formatElapsedTime(
-                rfidState.stats!.elapsedSeconds,
-              ),
             },
           ),
 
@@ -275,7 +333,10 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
       itemCount: sortedTags.length,
       itemBuilder: (context, index) {
         final tag = sortedTags[index];
-        return TagListItem(tag: tag);
+        return TagListItem(
+          tag: tag,
+          onTap: () => _navigateToLocateTag(tag.epc),
+        );
       },
     );
   }

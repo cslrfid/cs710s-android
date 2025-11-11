@@ -81,6 +81,29 @@ class ConnectionStatus extends StatelessWidget {
           ],
         );
 
+      case conn_provider.ConnectionStatus.initializing:
+        return const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+              ),
+            ),
+            SizedBox(width: 6),
+            Text(
+              'Initializing...',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.blue,
+              ),
+            ),
+          ],
+        );
+
       case conn_provider.ConnectionStatus.ready:
         return const Row(
           mainAxisSize: MainAxisSize.min,

@@ -8,11 +8,14 @@ import 'scan_state_provider.dart';
 part 'connection_state_provider.g.dart';
 
 /// Connection status enum
+/// States match cs710aquickstart connection flow:
+/// DISCONNECTED -> CONNECTING -> CONNECTED -> INITIALIZING -> READY
 enum ConnectionStatus {
   disconnected,
   connecting,
-  connected,
-  ready, // Connected and reader is ready for operations
+  connected, // Physical connection established
+  initializing, // Reader is being initialized
+  ready, // Reader is fully initialized and ready for operations
 }
 
 /// Connection state model
@@ -87,22 +90,29 @@ class ConnectionStateNotifier extends _$ConnectionStateNotifier {
   }
 
   /// Handle connection events from service
+  /// Maps to cs710aquickstart states:
+  /// onConnecting() -> CONNECTING
+  /// onConnected() -> INITIALIZING (reader is being initialized)
+  /// onReaderReady() -> READY
   void _handleConnectionEvent(ConnectionEvent event) {
     switch (event) {
       case ConnectingEvent():
+        // Physical connection is being established
         state = state.copyWith(
           status: ConnectionStatus.connecting,
           error: null,
         );
 
       case ConnectedEvent():
+        // Physical connection established, now initializing reader
         state = state.copyWith(
-          status: ConnectionStatus.connected,
+          status: ConnectionStatus.initializing,
           connectedReader: event.reader,
           error: null,
         );
 
       case ReaderReadyEvent():
+        // Reader fully initialized and ready for operations
         state = state.copyWith(
           status: ConnectionStatus.ready,
           connectedReader: event.reader,
