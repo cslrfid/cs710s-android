@@ -43,6 +43,7 @@ class GeigerState {
 
   /// Get proximity bars (0-5)
   int get proximityBars {
+    if (proximity == 0) return 0;  // No bars when no signal
     if (proximity <= 20) return 1;
     if (proximity <= 40) return 2;
     if (proximity <= 60) return 3;
@@ -53,6 +54,7 @@ class GeigerState {
   /// Get proximity description
   String get proximityDescription {
     if (!isSearching) return 'Not Searching';
+    if (proximity == 0) return 'No Signal';
     if (proximity < 20) return 'Very Far';
     if (proximity < 40) return 'Far';
     if (proximity < 60) return 'Medium';
@@ -159,6 +161,20 @@ class GeigerStateNotifier extends _$GeigerStateNotifier {
     final service = ref.read(geigerServiceProvider);
     service.clearSearch();
     state = const GeigerState();
+  }
+
+  /// Reset proximity to zero
+  void resetProximity() {
+    state = state.copyWith(
+      stats: const RfidGeigerStats(
+        targetEpc: '',
+        currentRssi: 0,
+        peakRssi: 0,
+        readCount: 0,
+        proximity: 0,
+        elapsedTimeMs: 0,
+      ),
+    );
   }
 
   /// Clear error

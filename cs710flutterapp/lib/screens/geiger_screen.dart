@@ -64,6 +64,10 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
     }
 
     final geigerNotifier = ref.read(geigerStateNotifierProvider.notifier);
+
+    // Reset proximity to zero before starting search
+    geigerNotifier.resetProximity();
+
     // Always use EPC memory bank (1)
     await geigerNotifier.startGeigerSearch(epc, memoryBank: 1);
   }
@@ -71,12 +75,6 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
   Future<void> _stopSearch() async {
     final geigerNotifier = ref.read(geigerStateNotifierProvider.notifier);
     await geigerNotifier.stopGeigerSearch();
-  }
-
-  void _clearSearch() {
-    _epcController.clear();
-    final geigerNotifier = ref.read(geigerStateNotifierProvider.notifier);
-    geigerNotifier.clearSearch();
   }
 
   /// Enable trigger key monitoring
@@ -162,13 +160,8 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
 
             const SizedBox(height: 24),
 
-            // Proximity Indicator
-            if (geigerState.isSearching) _buildProximityIndicator(geigerState),
-
-            const SizedBox(height: 16),
-
-            // Statistics
-            if (geigerState.stats != null) _buildStatistics(geigerState),
+            // Proximity Indicator - always visible
+            _buildProximityIndicator(geigerState),
           ],
         ),
       ),
@@ -200,35 +193,20 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
 
   /// Build control buttons
   Widget _buildControlButtons(GeigerState geigerState) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: geigerState.isSearching ? _stopSearch : _startSearch,
-            icon: Icon(
-              geigerState.isSearching ? Icons.stop : Icons.location_searching,
-            ),
-            label: Text(
-              geigerState.isSearching ? 'Stop Search' : 'Start Search',
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  geigerState.isSearching ? Colors.red : Colors.green,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        ElevatedButton.icon(
-          onPressed: geigerState.isSearching ? null : _clearSearch,
-          icon: const Icon(Icons.clear),
-          label: const Text('Clear'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          ),
-        ),
-      ],
+    return ElevatedButton.icon(
+      onPressed: geigerState.isSearching ? _stopSearch : _startSearch,
+      icon: Icon(
+        geigerState.isSearching ? Icons.stop : Icons.location_searching,
+      ),
+      label: Text(
+        geigerState.isSearching ? 'Stop Search' : 'Start Search',
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor:
+            geigerState.isSearching ? Colors.red : Colors.green,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
     );
   }
 
@@ -331,72 +309,12 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
     );
   }
 
-  /// Build statistics card
-  Widget _buildStatistics(GeigerState geigerState) {
-    final stats = geigerState.stats!;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Statistics',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            _buildStatRow('Target EPC', AppFormatters.formatEpc(stats.targetEpc)),
-            _buildStatRow(
-              'Current RSSI',
-              AppFormatters.formatRssi(stats.currentRssi),
-            ),
-            _buildStatRow(
-              'Peak RSSI',
-              AppFormatters.formatRssi(stats.peakRssi),
-            ),
-            _buildStatRow('Read Count', stats.readCount.toString()),
-            _buildStatRow(
-              'Elapsed Time',
-              AppFormatters.formatElapsedTime(stats.elapsedSeconds),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Build statistics row
-  Widget _buildStatRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontFamily: 'monospace',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Get color based on proximity
   Color _getProximityColor(double proximity) {
-    if (proximity < 20) return Colors.red;
-    if (proximity < 40) return Colors.orange;
-    if (proximity < 60) return Colors.yellow[700]!;
-    if (proximity < 80) return Colors.lightGreen;
-    return Colors.green;
+    if (proximity < 20) return Colors.grey;           // Very Far
+    if (proximity < 40) return Colors.yellow[700]!;   // Far
+    if (proximity < 60) return Colors.orange[400]!;   // Medium
+    if (proximity < 80) return Colors.orange[700]!;   // Close
+    return Colors.green;                               // Very Close
   }
 }

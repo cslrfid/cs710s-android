@@ -40,6 +40,9 @@ class RfidPlatformChannel(
     // Store callbacks to prevent garbage collection
     private var scanCallback: RfidScanCallback? = null
 
+    // Store current Geiger search target EPC
+    private var currentGeigerTargetEpc: String = ""
+
     // Method channel
     private val methodChannel = MethodChannel(binaryMessenger, METHOD_CHANNEL)
 
@@ -327,6 +330,9 @@ class RfidPlatformChannel(
             return
         }
 
+        // Store target EPC for use in stats mapping
+        currentGeigerTargetEpc = epc
+
         rfidManager.startGeigerSearch(epc, memoryBank, object : RfidGeigerCallback {
             override fun onSearchStarted() {
                 sendEvent(geigerEventSink, mapOf("type" to "searchStarted"))
@@ -591,12 +597,12 @@ class RfidPlatformChannel(
 
     private fun RfidGeigerStats.toMap(): Map<String, Any> {
         return mapOf(
+            "targetEpc" to currentGeigerTargetEpc,
             "currentRssi" to currentRssi,
             "peakRssi" to peakRssi,
             "readCount" to readCount,
-            "proximity" to proximityLevel,
-            "elapsedTimeMs" to duration,
-            "readRate" to readRate
+            "proximity" to proximityLevel.toInt(),
+            "elapsedTimeMs" to duration
         )
     }
 

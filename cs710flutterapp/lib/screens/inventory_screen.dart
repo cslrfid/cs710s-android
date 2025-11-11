@@ -22,7 +22,6 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   SortBy _sortBy = SortBy.timestamp;
-  bool _sortAscending = false;
   StreamSubscription? _triggerSubscription;
 
   @override
@@ -212,16 +211,6 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
               },
             );
           }),
-          const Divider(),
-          SwitchListTile(
-            title: const Text('Ascending Order'),
-            value: _sortAscending,
-            onChanged: (value) {
-              setState(() {
-                _sortAscending = value;
-              });
-            },
-          ),
         ],
       ),
     );
@@ -288,19 +277,18 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
 
     return Column(
       children: [
-        // Stats card
-        if (rfidState.stats != null)
-          StatsCard(
-            title: 'RFID Statistics',
-            trailing: const BatteryIndicator(),
-            stats: {
-              'Unique Tags': rfidState.uniqueTagCount.toString(),
-              'Total Reads': rfidState.totalReads.toString(),
-              'Read Rate': rfidState.stats!.readRate > 0
-                  ? AppFormatters.formatReadRate(rfidState.stats!.readRate)
-                  : 'N/A',
-            },
-          ),
+        // Stats card - always visible
+        StatsCard(
+          title: 'RFID Statistics',
+          trailing: const BatteryIndicator(),
+          stats: {
+            'Unique Tags': rfidState.uniqueTagCount.toString(),
+            'Total Reads': rfidState.totalReads.toString(),
+            'Read Rate': (rfidState.stats?.readRate ?? 0) > 0
+                ? AppFormatters.formatReadRate(rfidState.stats!.readRate)
+                : 'N/A',
+          },
+        ),
 
         // Control buttons
         Padding(
@@ -379,7 +367,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
 
     final sortedTags = notifier.getSortedTags(
       sortBy: _sortBy,
-      ascending: _sortAscending,
+      ascending: true,
     );
 
     return ListView.builder(
@@ -401,18 +389,17 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
 
     return Column(
       children: [
-        // Stats card
-        if (barcodeState.stats != null)
-          StatsCard(
-            title: 'Barcode Statistics',
-            stats: {
-              'Unique Barcodes': barcodeState.uniqueBarcodeCount.toString(),
-              'Total Scans': barcodeState.stats!.totalScans.toString(),
-              'Elapsed Time': AppFormatters.formatElapsedTime(
-                barcodeState.stats!.elapsedSeconds,
-              ),
-            },
-          ),
+        // Stats card - always visible
+        StatsCard(
+          title: 'Barcode Statistics',
+          stats: {
+            'Unique Barcodes': barcodeState.uniqueBarcodeCount.toString(),
+            'Total Scans': (barcodeState.stats?.totalScans ?? 0).toString(),
+            'Elapsed Time': barcodeState.stats != null
+                ? AppFormatters.formatElapsedTime(barcodeState.stats!.elapsedSeconds)
+                : '0s',
+          },
+        ),
 
         // Control buttons
         Padding(
