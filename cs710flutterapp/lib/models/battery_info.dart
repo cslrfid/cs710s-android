@@ -1,12 +1,14 @@
 /// Battery status information from the RFID reader
 class BatteryInfo {
   final int level; // 0-100%
-  final bool charging;
+  final double? voltage; // Voltage in volts (e.g., 3.750)
+  final bool charging; // Always false for CS710S (no charging detection)
   final int timestamp;
 
   const BatteryInfo({
     required this.level,
-    required this.charging,
+    this.voltage,
+    this.charging = false,
     required this.timestamp,
   });
 
@@ -14,7 +16,8 @@ class BatteryInfo {
   factory BatteryInfo.fromMap(Map<String, dynamic> map) {
     return BatteryInfo(
       level: map['level'] as int,
-      charging: map['charging'] as bool,
+      voltage: map['voltage'] as double?,
+      charging: map['charging'] as bool? ?? false,
       timestamp: map['timestamp'] as int,
     );
   }
@@ -23,6 +26,7 @@ class BatteryInfo {
   Map<String, dynamic> toMap() {
     return {
       'level': level,
+      'voltage': voltage,
       'charging': charging,
       'timestamp': timestamp,
     };

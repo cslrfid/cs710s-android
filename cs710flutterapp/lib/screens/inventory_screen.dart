@@ -6,6 +6,7 @@ import '../providers/scan_state_provider.dart';
 import '../models/rfid_configuration.dart';
 import '../widgets/tag_list_item.dart';
 import '../widgets/stats_card.dart';
+import '../widgets/battery_indicator.dart';
 import '../utils/formatters.dart';
 
 /// Inventory screen for RFID tags and barcodes
@@ -239,6 +240,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
         if (rfidState.stats != null)
           StatsCard(
             title: 'RFID Statistics',
+            trailing: const BatteryIndicator(),
             stats: {
               'Unique Tags': rfidState.uniqueTagCount.toString(),
               'Total Reads': rfidState.totalReads.toString(),

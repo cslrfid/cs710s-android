@@ -5,12 +5,14 @@ class StatsCard extends StatelessWidget {
   final String title;
   final Map<String, String> stats;
   final Color? backgroundColor;
+  final Widget? trailing; // Optional widget to show on the right of title
 
   const StatsCard({
     super.key,
     required this.title,
     required this.stats,
     this.backgroundColor,
+    this.trailing,
   });
 
   @override
@@ -24,12 +26,19 @@ class StatsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+            // Title with optional trailing widget
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                if (trailing != null) trailing!,
+              ],
             ),
             const SizedBox(height: 12),
 

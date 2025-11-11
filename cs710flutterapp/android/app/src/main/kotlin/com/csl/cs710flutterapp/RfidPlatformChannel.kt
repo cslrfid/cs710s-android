@@ -222,6 +222,9 @@ class RfidPlatformChannel(
                     "type" to "readerReady",
                     "reader" to reader.toMap()
                 ))
+
+                // Start battery monitoring automatically when reader is ready
+                startBatteryMonitoringInternal()
             }
 
             override fun onConnectionFailed(error: RfidError) {
@@ -232,6 +235,9 @@ class RfidPlatformChannel(
             }
 
             override fun onDisconnected(reader: RfidReader?, error: RfidError?) {
+                // Stop battery monitoring when disconnected
+                rfidManager.stopBatteryMonitoring()
+
                 sendEvent(connectionEventSink, mapOf(
                     "type" to "disconnected",
                     "reader" to reader?.toMap(),
@@ -421,12 +427,15 @@ class RfidPlatformChannel(
     // ========== BATTERY METHODS ==========
 
     private fun getBatteryInfo(result: MethodChannel.Result) {
-        // This would need to be implemented in RfidManager if not already available
-        // For now, return null
-        result.success(null)
+        val batteryInfo = rfidManager.getBatteryInfo()
+        result.success(batteryInfo?.toMap())
     }
 
-    private fun startBatteryMonitoring(result: MethodChannel.Result) {
+    /**
+     * Internal method to start battery monitoring with event stream
+     * Called automatically when reader becomes ready
+     */
+    private fun startBatteryMonitoringInternal() {
         rfidManager.startBatteryMonitoring(object : BatteryCallback {
             override fun onBatteryUpdate(batteryInfo: BatteryInfo) {
                 sendEvent(batteryEventSink, mapOf(
@@ -435,6 +444,10 @@ class RfidPlatformChannel(
                 ))
             }
         })
+    }
+
+    private fun startBatteryMonitoring(result: MethodChannel.Result) {
+        startBatteryMonitoringInternal()
         result.success(null)
     }
 

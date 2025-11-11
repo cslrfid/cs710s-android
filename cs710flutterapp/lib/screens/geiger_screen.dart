@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/geiger_state_provider.dart';
 import '../providers/connection_state_provider.dart';
+import '../widgets/battery_indicator.dart';
 import '../utils/formatters.dart';
 
 /// Geiger search screen for locating specific tags
@@ -92,6 +93,10 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Battery indicator
+            const Center(child: BatteryIndicator()),
+            const SizedBox(height: 16),
+
             // EPC Input
             _buildEpcInput(geigerState),
 

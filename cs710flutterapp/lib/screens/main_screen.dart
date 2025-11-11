@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/connection_state_provider.dart' as conn_provider;
-import '../providers/battery_state_provider.dart';
 import '../widgets/battery_indicator.dart';
 import '../widgets/connection_status.dart' as conn_widget;
 
@@ -12,17 +11,11 @@ class MainScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final connectionState = ref.watch(conn_provider.connectionStateNotifierProvider);
-    final batteryState = ref.watch(batteryStateNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('CS710S Quick Start'),
         actions: [
-          // Battery indicator
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: BatteryIndicator(batteryState: batteryState),
-          ),
           // Connection status
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
@@ -158,13 +151,16 @@ class MainScreen extends ConsumerWidget {
                   ),
             ),
             const SizedBox(height: 8),
-            if (isConnected && connectionState.connectedReader != null)
+            if (isConnected && connectionState.connectedReader != null) ...[
               Text(
                 connectionState.connectedReader!.name,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
               ),
+              const SizedBox(height: 12),
+              const BatteryIndicator(),
+            ],
             const SizedBox(height: 32),
             if (!isConnected) ...[
               ElevatedButton.icon(
