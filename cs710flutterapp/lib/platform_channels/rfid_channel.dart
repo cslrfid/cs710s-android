@@ -193,51 +193,65 @@ class RfidChannel {
 
   // ========== EVENT STREAMS ==========
 
+  /// Convert Map<Object?, Object?> to Map<String, dynamic>
+  /// This is needed because EventChannel sends Map<Object?, Object?> but we need Map<String, dynamic>
+  static Map<String, dynamic> _convertMap(dynamic event) {
+    final Map<String, dynamic> result = {};
+    if (event is! Map) return result;
+
+    event.forEach((key, value) {
+      if (key is String) {
+        if (value is Map) {
+          // Recursively convert nested maps
+          final Map<String, dynamic> nestedMap = {};
+          value.forEach((k, v) {
+            if (k is String) {
+              nestedMap[k] = v;
+            }
+          });
+          result[key] = nestedMap;
+        } else {
+          result[key] = value;
+        }
+      }
+    });
+    return result;
+  }
+
   /// Stream of scan events (reader discovered, scan error)
-  Stream<Map<String, dynamic>> get scanEvents =>
-      _scanEvents.receiveBroadcastStream().cast<Map<dynamic, dynamic>>().map(
-            (event) => event.cast<String, dynamic>(),
-          );
+  Stream<Map<String, dynamic>> get scanEvents {
+    print('📱 Flutter: Subscribing to scan events stream');
+    return _scanEvents.receiveBroadcastStream().map((event) {
+      print('📱 Flutter: Raw event received from native: $event');
+      return _convertMap(event);
+    });
+  }
 
   /// Stream of connection events (connecting, connected, ready, disconnected, failed)
   Stream<Map<String, dynamic>> get connectionEvents =>
-      _connectionEvents.receiveBroadcastStream().cast<Map<dynamic, dynamic>>().map(
-            (event) => event.cast<String, dynamic>(),
-          );
+      _connectionEvents.receiveBroadcastStream().map(_convertMap);
 
   /// Stream of inventory events (tag read, round update, stopped, error)
   Stream<Map<String, dynamic>> get inventoryEvents =>
-      _inventoryEvents.receiveBroadcastStream().cast<Map<dynamic, dynamic>>().map(
-            (event) => event.cast<String, dynamic>(),
-          );
+      _inventoryEvents.receiveBroadcastStream().map(_convertMap);
 
   /// Stream of Geiger events (proximity update, started, stopped, error)
   Stream<Map<String, dynamic>> get geigerEvents =>
-      _geigerEvents.receiveBroadcastStream().cast<Map<dynamic, dynamic>>().map(
-            (event) => event.cast<String, dynamic>(),
-          );
+      _geigerEvents.receiveBroadcastStream().map(_convertMap);
 
   /// Stream of barcode events (barcode scanned, stats update, error)
   Stream<Map<String, dynamic>> get barcodeEvents =>
-      _barcodeEvents.receiveBroadcastStream().cast<Map<dynamic, dynamic>>().map(
-            (event) => event.cast<String, dynamic>(),
-          );
+      _barcodeEvents.receiveBroadcastStream().map(_convertMap);
 
   /// Stream of battery events (battery update)
   Stream<Map<String, dynamic>> get batteryEvents =>
-      _batteryEvents.receiveBroadcastStream().cast<Map<dynamic, dynamic>>().map(
-            (event) => event.cast<String, dynamic>(),
-          );
+      _batteryEvents.receiveBroadcastStream().map(_convertMap);
 
   /// Stream of trigger events (trigger state changed)
   Stream<Map<String, dynamic>> get triggerEvents =>
-      _triggerEvents.receiveBroadcastStream().cast<Map<dynamic, dynamic>>().map(
-            (event) => event.cast<String, dynamic>(),
-          );
+      _triggerEvents.receiveBroadcastStream().map(_convertMap);
 
   /// Stream of configuration events (configured, failed)
   Stream<Map<String, dynamic>> get configEvents =>
-      _configEvents.receiveBroadcastStream().cast<Map<dynamic, dynamic>>().map(
-            (event) => event.cast<String, dynamic>(),
-          );
+      _configEvents.receiveBroadcastStream().map(_convertMap);
 }

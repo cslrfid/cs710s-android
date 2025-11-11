@@ -48,16 +48,27 @@ class RfidService {
 
   /// Stream of scan events
   Stream<ScanEvent> get scanEvents {
+    print('📱 RfidService: Creating scanEvents stream');
     return _channel.scanEvents.map((map) {
+      print('📱 RfidService: Processing event map: $map');
       final type = map['type'] as String;
+      print('📱 RfidService: Event type: $type');
+
       switch (type) {
         case 'readerDiscovered':
           final readerMap = map['reader'] as Map<String, dynamic>;
+          print('📱 RfidService: Creating ReaderDiscoveredEvent');
           return ReaderDiscoveredEvent(RfidReader.fromMap(readerMap));
+        case 'readerUpdated':
+          final readerMap = map['reader'] as Map<String, dynamic>;
+          print('📱 RfidService: Creating ReaderUpdatedEvent');
+          return ReaderUpdatedEvent(RfidReader.fromMap(readerMap));
         case 'scanError':
           final errorMap = map['error'] as Map<String, dynamic>;
+          print('📱 RfidService: Creating ScanErrorEvent');
           return ScanErrorEvent(RfidError.fromMap(errorMap));
         default:
+          print('❌ RfidService: Unknown scan event type: $type');
           throw RfidServiceException('Unknown scan event type: $type');
       }
     });
@@ -108,18 +119,27 @@ class RfidService {
       final type = map['type'] as String;
       switch (type) {
         case 'connecting':
-          final readerMap = map['reader'] as Map<String, dynamic>;
-          return ConnectingEvent(RfidReader.fromMap(readerMap));
+          // 'connecting' event has no reader data
+          return ConnectingEvent();
         case 'connected':
-          final readerMap = map['reader'] as Map<String, dynamic>;
+          final readerMap = map['reader'] as Map<String, dynamic>?;
+          if (readerMap == null) {
+            throw RfidServiceException('Connected event missing reader data');
+          }
           return ConnectedEvent(RfidReader.fromMap(readerMap));
-        case 'ready':
-          final readerMap = map['reader'] as Map<String, dynamic>;
+        case 'readerReady':
+          final readerMap = map['reader'] as Map<String, dynamic>?;
+          if (readerMap == null) {
+            throw RfidServiceException('ReaderReady event missing reader data');
+          }
           return ReaderReadyEvent(RfidReader.fromMap(readerMap));
         case 'disconnected':
           return DisconnectedEvent();
         case 'connectionFailed':
-          final errorMap = map['error'] as Map<String, dynamic>;
+          final errorMap = map['error'] as Map<String, dynamic>?;
+          if (errorMap == null) {
+            throw RfidServiceException('ConnectionFailed event missing error data');
+          }
           return ConnectionFailedEvent(RfidError.fromMap(errorMap));
         default:
           throw RfidServiceException('Unknown connection event type: $type');
@@ -422,6 +442,11 @@ class ReaderDiscoveredEvent extends ScanEvent {
   ReaderDiscoveredEvent(this.reader);
 }
 
+class ReaderUpdatedEvent extends ScanEvent {
+  final RfidReader reader;
+  ReaderUpdatedEvent(this.reader);
+}
+
 class ScanErrorEvent extends ScanEvent {
   final RfidError error;
   ScanErrorEvent(this.error);
@@ -431,8 +456,7 @@ class ScanErrorEvent extends ScanEvent {
 sealed class ConnectionEvent {}
 
 class ConnectingEvent extends ConnectionEvent {
-  final RfidReader reader;
-  ConnectingEvent(this.reader);
+  ConnectingEvent();
 }
 
 class ConnectedEvent extends ConnectionEvent {

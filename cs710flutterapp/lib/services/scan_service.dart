@@ -35,15 +35,18 @@ class ScanService {
 
   /// Initialize service - start listening to scan events
   void initialize() {
+    print('📱 ScanService: initialize() called');
     _scanEventSubscription = _rfidService.scanEvents.listen(
       _handleScanEvent,
       onError: (error) {
+        print('❌ ScanService: Stream error: $error');
         _errorController.add(RfidError(
           message: 'Scan event stream error: $error',
           type: RfidErrorType.unknown,
         ));
       },
     );
+    print('📱 ScanService: Stream subscription created');
   }
 
   /// Start scanning for RFID readers
@@ -92,16 +95,24 @@ class ScanService {
 
   /// Handle scan events from RfidService
   void _handleScanEvent(ScanEvent event) {
+    print('📱 ScanService: Handling scan event: ${event.runtimeType}');
     switch (event) {
       case ReaderDiscoveredEvent():
+        print('📱 ScanService: ReaderDiscoveredEvent - ${event.reader.name}');
         _handleReaderDiscovered(event.reader);
+      case ReaderUpdatedEvent():
+        print('📱 ScanService: ReaderUpdatedEvent - ${event.reader.name}');
+        _handleReaderDiscovered(event.reader); // Treat update same as discovery
       case ScanErrorEvent():
+        print('📱 ScanService: ScanErrorEvent - ${event.error.message}');
         _handleScanError(event.error);
     }
   }
 
   /// Handle reader discovered event
   void _handleReaderDiscovered(RfidReader reader) {
+    print('📱 ScanService: _handleReaderDiscovered - ${reader.name} (${reader.address})');
+
     // Check if reader already exists (by address)
     final existingIndex = _discoveredReaders.indexWhere(
       (r) => r.address == reader.address,
@@ -109,15 +120,18 @@ class ScanService {
 
     if (existingIndex != -1) {
       // Update existing reader (RSSI may have changed)
+      print('📱 ScanService: Updating existing reader at index $existingIndex');
       _discoveredReaders[existingIndex] = reader;
     } else {
       // Add new reader
+      print('📱 ScanService: Adding new reader to list');
       _discoveredReaders.add(reader);
     }
 
     // Sort by RSSI (strongest signal first)
     _discoveredReaders.sort((a, b) => b.rssi.compareTo(a.rssi));
 
+    print('📱 ScanService: Emitting updated reader list (${_discoveredReaders.length} readers)');
     // Emit updated list
     _readersController.add(List.from(_discoveredReaders));
   }

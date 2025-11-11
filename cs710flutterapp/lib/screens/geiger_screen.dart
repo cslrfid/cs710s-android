@@ -21,8 +21,13 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
   void dispose() {
     _epcController.dispose();
     // Stop search when leaving screen
-    final geigerNotifier = ref.read(geigerStateNotifierProvider.notifier);
-    geigerNotifier.stopGeigerSearch();
+    // Use ref before calling super.dispose() to avoid "ref after disposal" error
+    try {
+      final geigerNotifier = ref.read(geigerStateNotifierProvider.notifier);
+      geigerNotifier.stopGeigerSearch();
+    } catch (e) {
+      print('Warning: Could not stop geiger search on dispose: $e');
+    }
     super.dispose();
   }
 

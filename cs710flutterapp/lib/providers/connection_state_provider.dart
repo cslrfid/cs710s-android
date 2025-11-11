@@ -92,7 +92,6 @@ class ConnectionStateNotifier extends _$ConnectionStateNotifier {
       case ConnectingEvent():
         state = state.copyWith(
           status: ConnectionStatus.connecting,
-          connectedReader: event.reader,
           error: null,
         );
 

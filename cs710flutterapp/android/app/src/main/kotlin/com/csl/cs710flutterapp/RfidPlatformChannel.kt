@@ -37,6 +37,9 @@ class RfidPlatformChannel(
     // Store discovered readers by address
     private val discoveredReaders = mutableMapOf<String, RfidReader>()
 
+    // Store callbacks to prevent garbage collection
+    private var scanCallback: RfidScanCallback? = null
+
     // Method channel
     private val methodChannel = MethodChannel(binaryMessenger, METHOD_CHANNEL)
 
@@ -133,8 +136,13 @@ class RfidPlatformChannel(
     // ========== SCANNING METHODS ==========
 
     private fun startScan(result: MethodChannel.Result) {
-        rfidManager.startScan(object : RfidScanCallback {
+        android.util.Log.d("RfidPlatform", "📡 startScan() called")
+        android.util.Log.d("RfidPlatform", "   scanEventSink is ${if (scanEventSink != null) "SET" else "NULL"}")
+
+        // Create and store callback to prevent garbage collection
+        scanCallback = object : RfidScanCallback {
             override fun onReaderDiscovered(reader: RfidReader) {
+                android.util.Log.d("RfidPlatform", "🔍 onReaderDiscovered: ${reader.name} (${reader.address})")
                 // Store discovered reader
                 discoveredReaders[reader.address] = reader
                 sendEvent(scanEventSink, mapOf(
@@ -144,6 +152,7 @@ class RfidPlatformChannel(
             }
 
             override fun onReaderUpdated(reader: RfidReader) {
+                android.util.Log.d("RfidPlatform", "🔄 onReaderUpdated: ${reader.name} (${reader.address})")
                 // Update stored reader
                 discoveredReaders[reader.address] = reader
                 sendEvent(scanEventSink, mapOf(
@@ -153,17 +162,26 @@ class RfidPlatformChannel(
             }
 
             override fun onScanError(error: RfidError) {
+                android.util.Log.e("RfidPlatform", "❌ onScanError: ${error.message}")
                 sendEvent(scanEventSink, mapOf(
                     "type" to "scanError",
                     "error" to error.toMap()
                 ))
             }
-        })
+        }
+
+        android.util.Log.d("RfidPlatform", "   Callback created and stored")
+
+        // Start scan with the stored callback
+        rfidManager.startScan(scanCallback!!)
+        android.util.Log.d("RfidPlatform", "   rfidManager.startScan() completed")
         result.success(null)
     }
 
     private fun stopScan(result: MethodChannel.Result) {
         rfidManager.stopScan()
+        // Clear callback reference after stopping scan
+        scanCallback = null
         result.success(null)
     }
 
@@ -598,8 +616,14 @@ class RfidPlatformChannel(
      * Send event to Flutter on main thread
      */
     private fun sendEvent(sink: EventChannel.EventSink?, data: Map<String, Any?>) {
+        android.util.Log.d("RfidPlatform", "📤 sendEvent: ${data["type"]}, sink=${if (sink != null) "SET" else "NULL"}")
         mainHandler.post {
-            sink?.success(data)
+            if (sink != null) {
+                sink.success(data)
+                android.util.Log.d("RfidPlatform", "   ✓ Event sent to Flutter")
+            } else {
+                android.util.Log.w("RfidPlatform", "   ⚠️ Event sink is null, event dropped!")
+            }
         }
     }
 
@@ -607,10 +631,12 @@ class RfidPlatformChannel(
 
     private val scanStreamHandler = object : EventChannel.StreamHandler {
         override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+            android.util.Log.d("RfidPlatform", "🎧 Scan stream: onListen() - Flutter is now listening")
             scanEventSink = events
         }
 
         override fun onCancel(arguments: Any?) {
+            android.util.Log.d("RfidPlatform", "🔇 Scan stream: onCancel() - Flutter stopped listening")
             scanEventSink = null
         }
     }

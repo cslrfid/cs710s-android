@@ -30,11 +30,16 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
   void dispose() {
     _tabController.dispose();
     // Stop inventory when leaving screen
-    final rfidNotifier = ref.read(rfidInventoryStateNotifierProvider.notifier);
-    final barcodeNotifier =
-        ref.read(barcodeInventoryStateNotifierProvider.notifier);
-    rfidNotifier.stopInventory();
-    barcodeNotifier.stopBarcodeScan();
+    // Use ref before calling super.dispose() to avoid "ref after disposal" error
+    try {
+      final rfidNotifier = ref.read(rfidInventoryStateNotifierProvider.notifier);
+      final barcodeNotifier =
+          ref.read(barcodeInventoryStateNotifierProvider.notifier);
+      rfidNotifier.stopInventory();
+      barcodeNotifier.stopBarcodeScan();
+    } catch (e) {
+      print('Warning: Could not stop inventory on dispose: $e');
+    }
     super.dispose();
   }
 
