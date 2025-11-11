@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/geiger_state_provider.dart';
 import '../providers/connection_state_provider.dart';
+import '../providers/scan_state_provider.dart';
 import '../widgets/battery_indicator.dart';
 import '../utils/formatters.dart';
 
@@ -15,6 +17,7 @@ class GeigerScreen extends ConsumerStatefulWidget {
 
 class _GeigerScreenState extends ConsumerState<GeigerScreen> {
   final TextEditingController _epcController = TextEditingController();
+  StreamSubscription? _triggerSubscription;
 
   @override
   void initState() {
@@ -25,6 +28,9 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
       if (args != null && args['epc'] != null) {
         _epcController.text = args['epc'] as String;
       }
+
+      // Enable trigger key monitoring
+      _enableTriggerKey();
     });
   }
 
@@ -36,6 +42,9 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
     try {
       final geigerNotifier = ref.read(geigerStateNotifierProvider.notifier);
       geigerNotifier.stopGeigerSearch();
+
+      // Disable trigger monitoring
+      _disableTriggerKey();
     } catch (e) {
       print('Warning: Could not stop geiger search on dispose: $e');
     }
@@ -68,6 +77,52 @@ class _GeigerScreenState extends ConsumerState<GeigerScreen> {
     _epcController.clear();
     final geigerNotifier = ref.read(geigerStateNotifierProvider.notifier);
     geigerNotifier.clearSearch();
+  }
+
+  /// Enable trigger key monitoring
+  /// Trigger will automatically start/stop Geiger search when pressed/released
+  Future<void> _enableTriggerKey() async {
+    final connectionState = ref.read(connectionStateNotifierProvider);
+    if (!connectionState.isReady) {
+      return;
+    }
+
+    try {
+      final rfidService = ref.read(rfidServiceProvider);
+      await rfidService.enableTrigger(autoInventory: false);
+
+      // Listen to trigger events and simulate button press
+      _triggerSubscription = rfidService.triggerEvents.listen((event) {
+        final geigerState = ref.read(geigerStateNotifierProvider);
+
+        if (event.pressed) {
+          // Trigger pressed - start search if not already running
+          if (!geigerState.isSearching) {
+            _startSearch();
+          }
+        } else {
+          // Trigger released - stop search if running
+          if (geigerState.isSearching) {
+            _stopSearch();
+          }
+        }
+      });
+    } catch (e) {
+      print('Warning: Could not enable trigger key: $e');
+    }
+  }
+
+  /// Disable trigger key monitoring
+  Future<void> _disableTriggerKey() async {
+    try {
+      await _triggerSubscription?.cancel();
+      _triggerSubscription = null;
+
+      final rfidService = ref.read(rfidServiceProvider);
+      await rfidService.disableTrigger();
+    } catch (e) {
+      print('Warning: Could not disable trigger key: $e');
+    }
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/inventory_state_provider.dart';
@@ -22,6 +23,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
   late TabController _tabController;
   SortBy _sortBy = SortBy.timestamp;
   bool _sortAscending = false;
+  StreamSubscription? _triggerSubscription;
 
   @override
   void initState() {
@@ -31,6 +33,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
     // Apply reader configuration when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyReaderConfiguration();
+      _enableTriggerKey();
     });
   }
 
@@ -90,6 +93,9 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
           ref.read(barcodeInventoryStateNotifierProvider.notifier);
       rfidNotifier.stopInventory();
       barcodeNotifier.stopBarcodeScan();
+
+      // Disable trigger monitoring
+      _disableTriggerKey();
     } catch (e) {
       print('Warning: Could not stop inventory on dispose: $e');
     }
@@ -124,6 +130,52 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
   void _clearBarcodes() {
     final notifier = ref.read(barcodeInventoryStateNotifierProvider.notifier);
     notifier.clearBarcodes();
+  }
+
+  /// Enable trigger key monitoring
+  /// Trigger will automatically start/stop inventory when pressed/released
+  Future<void> _enableTriggerKey() async {
+    final connectionState = ref.read(connectionStateNotifierProvider);
+    if (!connectionState.isReady) {
+      return;
+    }
+
+    try {
+      final rfidService = ref.read(rfidServiceProvider);
+      await rfidService.enableTrigger(autoInventory: false);
+
+      // Listen to trigger events and simulate button press
+      _triggerSubscription = rfidService.triggerEvents.listen((event) {
+        final rfidState = ref.read(rfidInventoryStateNotifierProvider);
+
+        if (event.pressed) {
+          // Trigger pressed - start inventory if not already running
+          if (!rfidState.isInventorying) {
+            _startRfidInventory();
+          }
+        } else {
+          // Trigger released - stop inventory if running
+          if (rfidState.isInventorying) {
+            _stopRfidInventory();
+          }
+        }
+      });
+    } catch (e) {
+      print('Warning: Could not enable trigger key: $e');
+    }
+  }
+
+  /// Disable trigger key monitoring
+  Future<void> _disableTriggerKey() async {
+    try {
+      await _triggerSubscription?.cancel();
+      _triggerSubscription = null;
+
+      final rfidService = ref.read(rfidServiceProvider);
+      await rfidService.disableTrigger();
+    } catch (e) {
+      print('Warning: Could not disable trigger key: $e');
+    }
   }
 
   void _navigateToLocateTag(String epc) {
