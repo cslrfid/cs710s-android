@@ -160,10 +160,6 @@ class InventoryService {
   /// Start barcode scanning
   Future<void> startBarcodeScan() async {
     try {
-      // Clear previous results
-      _barcodes.clear();
-      _barcodesController.add([]);
-
       await _rfidService.startBarcodeScan();
       _isBarcodeScanning = true;
       _barcodeScanningController.add(true);

@@ -132,7 +132,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
   }
 
   /// Enable trigger key monitoring
-  /// Trigger will automatically start/stop inventory when pressed/released
+  /// Trigger will automatically start/stop inventory/barcode when pressed/released
   Future<void> _enableTriggerKey() async {
     final connectionState = ref.read(connectionStateNotifierProvider);
     if (!connectionState.isReady) {
@@ -145,17 +145,38 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
 
       // Listen to trigger events and simulate button press
       _triggerSubscription = rfidService.triggerEvents.listen((event) {
-        final rfidState = ref.read(rfidInventoryStateNotifierProvider);
+        // Check which tab is active
+        final isRfidTab = _tabController.index == 0;
 
-        if (event.pressed) {
-          // Trigger pressed - start inventory if not already running
-          if (!rfidState.isInventorying) {
-            _startRfidInventory();
+        if (isRfidTab) {
+          // RFID tab
+          final rfidState = ref.read(rfidInventoryStateNotifierProvider);
+
+          if (event.pressed) {
+            // Trigger pressed - start inventory if not already running
+            if (!rfidState.isInventorying) {
+              _startRfidInventory();
+            }
+          } else {
+            // Trigger released - stop inventory if running
+            if (rfidState.isInventorying) {
+              _stopRfidInventory();
+            }
           }
         } else {
-          // Trigger released - stop inventory if running
-          if (rfidState.isInventorying) {
-            _stopRfidInventory();
+          // Barcode tab
+          final barcodeState = ref.read(barcodeInventoryStateNotifierProvider);
+
+          if (event.pressed) {
+            // Trigger pressed - start barcode scan if not already running
+            if (!barcodeState.isScanning) {
+              _startBarcodeScanning();
+            }
+          } else {
+            // Trigger released - stop barcode scan if running
+            if (barcodeState.isScanning) {
+              _stopBarcodeScanning();
+            }
           }
         }
       });
@@ -389,18 +410,6 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen>
 
     return Column(
       children: [
-        // Stats card - always visible
-        StatsCard(
-          title: 'Barcode Statistics',
-          stats: {
-            'Unique Barcodes': barcodeState.uniqueBarcodeCount.toString(),
-            'Total Scans': (barcodeState.stats?.totalScans ?? 0).toString(),
-            'Elapsed Time': barcodeState.stats != null
-                ? AppFormatters.formatElapsedTime(barcodeState.stats!.elapsedSeconds)
-                : '0s',
-          },
-        ),
-
         // Control buttons
         Padding(
           padding: const EdgeInsets.all(8.0),
