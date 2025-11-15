@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CS710S QuickStart</string>
+
+    <!-- Main Activity -->
+    <string name="main_title">CS710S QuickStart</string>
+    <string name="main_subtitle">Simple RFID Reader Demo</string>
+    <string name="btn_scan_readers">Scan for Readers</string>
+    <string name="btn_inventory">RFID Inventory</string>
+    <string name="btn_geiger_search">Geiger Search</string>
+
+    <!-- Scan Activity -->
+    <string name="scan_title">Scan for Readers</string>
+    <string name="btn_start_scan">Start Scan</string>
+    <string name="btn_stop_scan">Stop Scan</string>
+    <string name="no_readers_found">No readers found</string>
+    <string name="scanning">Scanning...</string>
+
+    <!-- Inventory Activity -->
+    <string name="inventory_title">RFID Inventory</string>
+    <string name="btn_start_inventory">Start</string>
+    <string name="btn_stop_inventory">Stop</string>
+    <string name="btn_clear">Clear</string>
+    <string name="btn_settings">Settings</string>
+    <string name="no_tags_found">No tags read yet</string>
+    <string name="stats_format">Tags: %1$d | Reads: %2$d | Rate: %3$.1f/sec</string>
+    <string name="scan_mode">Scan Mode:</string>
+    <string name="mode_rfid">RFID</string>
+    <string name="mode_barcode">Barcode</string>
+
+    <!-- Geiger Search Activity -->
+    <string name="geiger_title">Geiger Search</string>
+    <string name="hint_target_epc">Enter target EPC</string>
+    <string name="btn_search">Search</string>
+    <string name="btn_stop_search">Stop</string>
+    <string name="rssi_label">Signal:</string>
+    <string name="proximity_label">Proximity:</string>
+    <string name="enable_beep">Enable Beep</string>
+    <string name="threshold_label">Threshold:</string>
+    <string name="geiger_stats_format">Reads: %1$d | Rate: %2$.1f/sec | Peak: %3$.1f dBuV</string>
+
+    <!-- Errors -->
+    <string name="error_no_bluetooth">Bluetooth is not available</string>
+    <string name="error_bluetooth_disabled">Please enable Bluetooth</string>
+    <string name="error_no_permission">Location permission is required</string>
+    <string name="error_not_connected">Not connected to a reader</string>
+    <string name="error_connection_failed">Connection failed</string>
+    <string name="error_scan_failed">Scan failed</string>
+    <string name="error_invalid_epc">Please enter a valid EPC</string>
+
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="connecting">Connecting...</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+</resources>
