@@ -8,11 +8,11 @@ extension RfidGeigerStats {
     func toDictionary(readRate: Int = 0) -> [String: Any] {
         return [
             "targetEpc": targetEpc,
-            "currentRssi": currentRssi,
-            "peakRssi": peakRssi,
-            "proximity": proximity,         // 0-100% (calculated by SDK)
+            "currentRssi": Int(currentRssi),  // Convert Double to Int for Flutter/Android compatibility
+            "peakRssi": Int(peakRssi),        // Convert Double to Int for Flutter/Android compatibility
+            "proximity": proximity,           // 0-100% (calculated by SDK)
             "readCount": readCount,
-            "readRate": readRate,           // Reads per second (calculated externally)
+            "readRate": readRate,             // Reads per second (calculated externally)
             "elapsedTimeMs": elapsedTimeMs
         ]
     }
@@ -20,8 +20,8 @@ extension RfidGeigerStats {
     /// Create a minimal stats dictionary
     func toMinimalDictionary() -> [String: Any] {
         return [
-            "currentRssi": currentRssi,
-            "peakRssi": peakRssi,
+            "currentRssi": Int(currentRssi),  // Convert Double to Int
+            "peakRssi": Int(peakRssi),        // Convert Double to Int
             "proximity": proximity,
             "readCount": readCount
         ]

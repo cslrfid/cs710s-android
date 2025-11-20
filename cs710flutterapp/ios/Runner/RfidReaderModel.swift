@@ -8,7 +8,7 @@ extension RfidReader {
         return [
             "name": name,
             "address": address,
-            "rssi": rssi,
+            "rssi": Int(rssi),  // Convert Double to Int for Flutter/Android compatibility
             "serviceUUID": 0  // Not available in iOS SDK
         ]
     }

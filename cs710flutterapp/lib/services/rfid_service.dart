@@ -179,11 +179,16 @@ class RfidService {
   /// Stream of inventory events
   Stream<InventoryEvent> get inventoryEvents {
     return _channel.inventoryEvents.map((map) {
+      print('📱 RfidService: Processing inventory event: $map');
       final type = map['type'] as String;
+      print('📱 RfidService: Event type: $type');
       switch (type) {
         case 'tagRead':
           final tagMap = map['tag'] as Map<String, dynamic>;
-          return TagReadEvent(RfidTag.fromMap(tagMap));
+          print('📱 RfidService: Creating TagReadEvent with tagMap: $tagMap');
+          final tag = RfidTag.fromMap(tagMap);
+          print('📱 RfidService: Created RfidTag - EPC: ${tag.epc}, RSSI: ${tag.rssi}, Count: ${tag.count}');
+          return TagReadEvent(tag);
         case 'inventoryRound':
           final statsMap = map['stats'] as Map<String, dynamic>;
           return InventoryRoundEvent(RfidInventoryStats.fromMap(statsMap));

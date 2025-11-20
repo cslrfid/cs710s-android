@@ -108,9 +108,13 @@ class RfidInventoryStateNotifier extends _$RfidInventoryStateNotifier {
   RfidInventoryState build() {
     final service = ref.watch(inventoryServiceProvider);
 
+    print('📱 RfidInventoryStateNotifier: build() called, setting up stream listeners');
+
     // Listen to tags stream
     service.rfidTags.listen((tags) {
+      print('📱 RfidInventoryStateNotifier: Tags stream emitted ${tags.length} tags');
       state = state.copyWith(tags: tags);
+      print('📱 RfidInventoryStateNotifier: State updated with ${state.tags.length} tags');
     });
 
     // Listen to stats stream

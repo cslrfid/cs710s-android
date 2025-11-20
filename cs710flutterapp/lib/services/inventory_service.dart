@@ -201,8 +201,10 @@ class InventoryService {
 
   /// Handle inventory events from RfidService
   void _handleInventoryEvent(InventoryEvent event) {
+    print('📱 InventoryService: Received inventory event: ${event.runtimeType}');
     switch (event) {
       case TagReadEvent():
+        print('📱 InventoryService: TagReadEvent received - EPC: ${event.tag.epc}');
         _handleTagRead(event.tag);
       case InventoryRoundEvent():
         _handleInventoryRound(event.stats);
@@ -215,21 +217,26 @@ class InventoryService {
 
   /// Handle tag read event
   void _handleTagRead(RfidTag tag) {
+    print('📱 InventoryService: _handleTagRead called for EPC: ${tag.epc}');
     final existingTag = _tags[tag.epc];
 
     if (existingTag != null) {
       // Update count for existing tag
+      print('📱 InventoryService: Updating existing tag ${tag.epc}, old count: ${existingTag.count}, new count: ${existingTag.count + 1}');
       _tags[tag.epc] = existingTag.copyWith(
         count: existingTag.count + 1,
       );
     } else {
       // Add new tag
+      print('📱 InventoryService: Adding new tag ${tag.epc}');
       _tags[tag.epc] = tag;
     }
 
     // Emit updated list (sorted by most recent read)
     final tagList = currentTags;
+    print('📱 InventoryService: Emitting tag list with ${tagList.length} tags');
     _rfidTagsController.add(tagList);
+    print('📱 InventoryService: Tag list emitted');
   }
 
   /// Handle inventory round update

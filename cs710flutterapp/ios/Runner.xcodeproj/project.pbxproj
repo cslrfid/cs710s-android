@@ -8,23 +8,24 @@
 
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
-		15411FC3AA6804ECCA10C991 /* RfidErrorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5A3177ED1C07C74F041FD7 /* RfidErrorModel.swift */; };
-		2583B43DFB96A30D1F4FAD90 /* RfidInventoryStatsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C426F252BFC5A3B4C34E633 /* RfidInventoryStatsModel.swift */; };
-		26B68644B3950A905B70C739 /* RfidReaderModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93A6642D34F3DBE89FEB4C5B /* RfidReaderModel.swift */; };
+		1F31297FCCE9F8B744365785 /* PermissionChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91923550203C7537D8F6B7DB /* PermissionChannel.swift */; };
+		242617E6EAB3DD85511CD080 /* BarcodeDataModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79568FF0CB9403CB9321900F /* BarcodeDataModel.swift */; };
+		2E3B4CD99CB8384D2EAA6D32 /* RfidInventoryStatsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 320FF9C12DFBB13D385A2075 /* RfidInventoryStatsModel.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
-		39029434A1854C86061A097C /* RfidGeigerStatsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD81A0677FC06A15F9C37046 /* RfidGeigerStatsModel.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
-		4553B63A8D530CF4C1BDF039 /* RfidConfigurationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7567A206FAE825A4F72D4A8E /* RfidConfigurationModel.swift */; };
-		4D0D3C2A8CA7EDEC4979366A /* RfidPlatformChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9DB474123A4DC760F2E4551 /* RfidPlatformChannel.swift */; };
-		510FE0E2E9123EA735C6E90D /* RfidTagModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88468B233AED534CDB160234 /* RfidTagModel.swift */; };
-		7391AF4D6050B847FE6ABCD9 /* BarcodeDataModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 252D552D8188C38E9D2A1824 /* BarcodeDataModel.swift */; };
+		49F90A581141E241F1A56D43 /* BatteryInfoModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B7C25DA81219458CC2B862A /* BatteryInfoModel.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		7FF8EE9B90F96925F96723BC /* RfidPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372A63EA157DB62C5ECB0271 /* RfidPlugin.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		9D937EED11735EA2C35CE1B9 /* RfidPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852DC8F7D2FC789847A3793D /* RfidPlugin.swift */; };
-		C87137515C5FE16663C0E582 /* BatteryInfoModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6A6E17A320390E35E249C84 /* BatteryInfoModel.swift */; };
+		A663315EF5367064ABCAF7DE /* RfidConfigurationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03F91F5126AD67392E016104 /* RfidConfigurationModel.swift */; };
+		A8B44B55383935DEF85913D6 /* RfidGeigerStatsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85707FEEF9C5CF55AC8CFB39 /* RfidGeigerStatsModel.swift */; };
 		CA06879C2ECDA33300BC483A /* CSL-CS710S-Library in Frameworks */ = {isa = PBXBuildFile; productRef = CA06879B2ECDA33300BC483A /* CSL-CS710S-Library */; };
+		DB13587723C0E71430ED8255 /* RfidTagModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5028F2DDBF2A096EAA36FE93 /* RfidTagModel.swift */; };
+		EAC86C615FB52BBC27973B28 /* RfidReaderModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7B58EC7B7CC339CDCAD80CA /* RfidReaderModel.swift */; };
+		EC856C210DCC25C6FCAD4F19 /* RfidErrorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84250128B6F1C3C8BA9A708B /* RfidErrorModel.swift */; };
+		FC07EEB515B0F720B5C5C6F0 /* RfidPlatformChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F1A643B4E50E12D0D76B2F /* RfidPlatformChannel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,21 +52,23 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0C426F252BFC5A3B4C34E633 /* RfidInventoryStatsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidInventoryStatsModel.swift; sourceTree = "<group>"; };
+		03F91F5126AD67392E016104 /* RfidConfigurationModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidConfigurationModel.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
-		1A5A3177ED1C07C74F041FD7 /* RfidErrorModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidErrorModel.swift; sourceTree = "<group>"; };
-		252D552D8188C38E9D2A1824 /* BarcodeDataModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BarcodeDataModel.swift; sourceTree = "<group>"; };
+		320FF9C12DFBB13D385A2075 /* RfidInventoryStatsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidInventoryStatsModel.swift; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		372A63EA157DB62C5ECB0271 /* RfidPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidPlugin.swift; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		5028F2DDBF2A096EAA36FE93 /* RfidTagModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidTagModel.swift; sourceTree = "<group>"; };
+		6B7C25DA81219458CC2B862A /* BatteryInfoModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BatteryInfoModel.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		7567A206FAE825A4F72D4A8E /* RfidConfigurationModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidConfigurationModel.swift; sourceTree = "<group>"; };
+		79568FF0CB9403CB9321900F /* BarcodeDataModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BarcodeDataModel.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
-		852DC8F7D2FC789847A3793D /* RfidPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidPlugin.swift; sourceTree = "<group>"; };
-		88468B233AED534CDB160234 /* RfidTagModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidTagModel.swift; sourceTree = "<group>"; };
-		93A6642D34F3DBE89FEB4C5B /* RfidReaderModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidReaderModel.swift; sourceTree = "<group>"; };
+		84250128B6F1C3C8BA9A708B /* RfidErrorModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidErrorModel.swift; sourceTree = "<group>"; };
+		85707FEEF9C5CF55AC8CFB39 /* RfidGeigerStatsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidGeigerStatsModel.swift; sourceTree = "<group>"; };
+		91923550203C7537D8F6B7DB /* PermissionChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PermissionChannel.swift; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -73,9 +76,8 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		AD81A0677FC06A15F9C37046 /* RfidGeigerStatsModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidGeigerStatsModel.swift; sourceTree = "<group>"; };
-		C6A6E17A320390E35E249C84 /* BatteryInfoModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BatteryInfoModel.swift; sourceTree = "<group>"; };
-		F9DB474123A4DC760F2E4551 /* RfidPlatformChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidPlatformChannel.swift; sourceTree = "<group>"; };
+		B7B58EC7B7CC339CDCAD80CA /* RfidReaderModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidReaderModel.swift; sourceTree = "<group>"; };
+		C0F1A643B4E50E12D0D76B2F /* RfidPlatformChannel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RfidPlatformChannel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,16 +141,17 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
-				852DC8F7D2FC789847A3793D /* RfidPlugin.swift */,
-				F9DB474123A4DC760F2E4551 /* RfidPlatformChannel.swift */,
-				93A6642D34F3DBE89FEB4C5B /* RfidReaderModel.swift */,
-				88468B233AED534CDB160234 /* RfidTagModel.swift */,
-				AD81A0677FC06A15F9C37046 /* RfidGeigerStatsModel.swift */,
-				C6A6E17A320390E35E249C84 /* BatteryInfoModel.swift */,
-				252D552D8188C38E9D2A1824 /* BarcodeDataModel.swift */,
-				1A5A3177ED1C07C74F041FD7 /* RfidErrorModel.swift */,
-				7567A206FAE825A4F72D4A8E /* RfidConfigurationModel.swift */,
-				0C426F252BFC5A3B4C34E633 /* RfidInventoryStatsModel.swift */,
+				372A63EA157DB62C5ECB0271 /* RfidPlugin.swift */,
+				91923550203C7537D8F6B7DB /* PermissionChannel.swift */,
+				C0F1A643B4E50E12D0D76B2F /* RfidPlatformChannel.swift */,
+				B7B58EC7B7CC339CDCAD80CA /* RfidReaderModel.swift */,
+				5028F2DDBF2A096EAA36FE93 /* RfidTagModel.swift */,
+				85707FEEF9C5CF55AC8CFB39 /* RfidGeigerStatsModel.swift */,
+				6B7C25DA81219458CC2B862A /* BatteryInfoModel.swift */,
+				79568FF0CB9403CB9321900F /* BarcodeDataModel.swift */,
+				84250128B6F1C3C8BA9A708B /* RfidErrorModel.swift */,
+				03F91F5126AD67392E016104 /* RfidConfigurationModel.swift */,
+				320FF9C12DFBB13D385A2075 /* RfidInventoryStatsModel.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -305,16 +308,17 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
-				9D937EED11735EA2C35CE1B9 /* RfidPlugin.swift in Sources */,
-				4D0D3C2A8CA7EDEC4979366A /* RfidPlatformChannel.swift in Sources */,
-				26B68644B3950A905B70C739 /* RfidReaderModel.swift in Sources */,
-				510FE0E2E9123EA735C6E90D /* RfidTagModel.swift in Sources */,
-				39029434A1854C86061A097C /* RfidGeigerStatsModel.swift in Sources */,
-				C87137515C5FE16663C0E582 /* BatteryInfoModel.swift in Sources */,
-				7391AF4D6050B847FE6ABCD9 /* BarcodeDataModel.swift in Sources */,
-				15411FC3AA6804ECCA10C991 /* RfidErrorModel.swift in Sources */,
-				4553B63A8D530CF4C1BDF039 /* RfidConfigurationModel.swift in Sources */,
-				2583B43DFB96A30D1F4FAD90 /* RfidInventoryStatsModel.swift in Sources */,
+				7FF8EE9B90F96925F96723BC /* RfidPlugin.swift in Sources */,
+				1F31297FCCE9F8B744365785 /* PermissionChannel.swift in Sources */,
+				FC07EEB515B0F720B5C5C6F0 /* RfidPlatformChannel.swift in Sources */,
+				EAC86C615FB52BBC27973B28 /* RfidReaderModel.swift in Sources */,
+				DB13587723C0E71430ED8255 /* RfidTagModel.swift in Sources */,
+				A8B44B55383935DEF85913D6 /* RfidGeigerStatsModel.swift in Sources */,
+				49F90A581141E241F1A56D43 /* BatteryInfoModel.swift in Sources */,
+				242617E6EAB3DD85511CD080 /* BarcodeDataModel.swift in Sources */,
+				EC856C210DCC25C6FCAD4F19 /* RfidErrorModel.swift in Sources */,
+				A663315EF5367064ABCAF7DE /* RfidConfigurationModel.swift in Sources */,
+				2E3B4CD99CB8384D2EAA6D32 /* RfidInventoryStatsModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -372,6 +376,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -493,6 +498,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -550,6 +556,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;

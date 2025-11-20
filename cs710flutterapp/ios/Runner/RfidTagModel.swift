@@ -11,7 +11,7 @@ extension RfidTag {
 
         return [
             "epc": epc,
-            "rssi": rssi,
+            "rssi": Int(rssi),  // Convert Double to Int for Flutter/Android compatibility
             "count": count,
             "timestamp": formatter.string(from: date),
             "phase": phase,

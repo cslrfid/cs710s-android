@@ -211,6 +211,8 @@ class RfidPlatformChannel: NSObject {
             setTarget(call: call, result: result)
         case "setPopulation":
             setPopulation(call: call, result: result)
+        case "applyConfiguration":
+            applyConfigurationFromMap(call: call, result: result)
         case "getConfiguration":
             getConfiguration(result: result)
 
@@ -285,21 +287,13 @@ extension RfidPlatformChannel: RfidScanDelegate {
 
             sendEvent(to: scanEventSink, data: [
                 "type": "readerDiscovered",
-                "reader": [
-                    "name": reader.name,
-                    "address": reader.address,
-                    "rssi": reader.rssi
-                ]
+                "reader": reader.toDictionary()
             ])
         } else {
             // Update existing reader RSSI
             sendEvent(to: scanEventSink, data: [
                 "type": "readerUpdated",
-                "reader": [
-                    "name": reader.name,
-                    "address": reader.address,
-                    "rssi": reader.rssi
-                ]
+                "reader": reader.toDictionary()
             ])
         }
     }
@@ -342,27 +336,15 @@ extension RfidPlatformChannel: RfidConnectionDelegate {
 
     func onConnected(_ reader: RfidReader) {
         sendEvent(to: connectionEventSink, data: [
-            "type": "connecting"
+            "type": "connected",
+            "reader": reader.toDictionary()
         ])
     }
 
     func onReaderReady(_ reader: RfidReader) {
         sendEvent(to: connectionEventSink, data: [
-            "type": "connected",
-            "reader": [
-                "name": reader.name,
-                "address": reader.address
-            ]
-        ])
-
-        sendEvent(to: connectionEventSink, data: [
             "type": "readerReady",
-            "reader": [
-                "name": reader.name,
-                "address": reader.address,
-                "firmwareVersion": "",  // TODO: Get from SDK
-                "model": "CS710S"
-            ]
+            "reader": reader.toDetailedDictionary()
         ])
 
         // Auto-start battery monitoring (match Android behavior)
@@ -458,6 +440,33 @@ extension RfidPlatformChannel: RfidConfigurationDelegate {
         result(nil)
     }
 
+    private func applyConfigurationFromMap(call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let configMap = call.arguments as? [String: Any] else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Configuration map is required", details: nil))
+            return
+        }
+
+        // Parse configuration from map
+        let powerLevel = configMap["powerLevel"] as? Int ?? currentPowerLevel
+        let session = configMap["session"] as? Int ?? currentSession
+        let qValue = configMap["qValue"] as? Int ?? 4
+        // Note: iOS SDK doesn't support enableBeep/enableVibrate in configure()
+
+        // Update current values
+        currentPowerLevel = powerLevel
+        currentSession = session
+
+        // Apply configuration
+        rfidManager.configure()
+            .powerLevel(powerLevel)
+            .session(session)
+            .target(RfidTarget(rawValue: currentTarget) ?? .A)
+            .qValue(qValue)
+            .apply(delegate: self)
+
+        result(nil)
+    }
+
     private func applyConfiguration() {
         rfidManager.configure()
             .powerLevel(currentPowerLevel)
@@ -505,18 +514,20 @@ extension RfidPlatformChannel: RfidInventoryDelegate {
         // Store/update tag
         tags[tag.epc] = tag
 
-        let formatter = ISO8601DateFormatter()
-        sendEvent(to: inventoryEventSink, data: [
+        let tagDict = tag.toDictionary()
+        let eventData: [String: Any] = [
             "type": "tagRead",
-            "tag": [
-                "epc": tag.epc,
-                "rssi": tag.rssi,
-                "count": tag.count,
-                "timestamp": formatter.string(from: Date(timeIntervalSince1970: tag.timestamp)),
-                "phase": 0,  // Not provided by SDK
-                "channel": 0  // Not provided by SDK
-            ]
-        ])
+            "tag": tagDict
+        ]
+
+        NSLog("📱 iOS: onTagRead called - EPC: \(tag.epc), RSSI: \(tag.rssi)")
+        NSLog("📱 iOS: Tag dictionary: \(tagDict)")
+        NSLog("📱 iOS: Event data: \(eventData)")
+        NSLog("📱 iOS: inventoryEventSink is nil? \(inventoryEventSink == nil)")
+
+        sendEvent(to: inventoryEventSink, data: eventData)
+
+        NSLog("📱 iOS: Event sent to Flutter")
     }
 
     func onInventoryRound(_ stats: RfidInventoryStats) {
@@ -585,15 +596,8 @@ extension RfidPlatformChannel: RfidGeigerDelegate {
 
         sendEvent(to: geigerEventSink, data: [
             "type": "rssiUpdate",
-            "rssi": stats.currentRssi,
-            "stats": [
-                "targetEpc": "",  // TODO: Store target EPC
-                "currentRssi": stats.currentRssi,
-                "peakRssi": stats.peakRssi,
-                "readCount": stats.readCount,
-                "proximity": stats.proximity,
-                "elapsedTimeMs": 0  // TODO: Track elapsed time
-            ]
+            "rssi": Int(stats.currentRssi),  // Convert Double to Int
+            "stats": stats.toDictionary()
         ])
 
         sendEvent(to: geigerEventSink, data: [
