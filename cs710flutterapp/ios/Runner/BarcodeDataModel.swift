@@ -5,13 +5,9 @@ import CSL_CS710S_Library
 extension BarcodeData {
     /// Convert BarcodeData to Dictionary for Flutter platform channel
     func toDictionary() -> [String: Any] {
-        // Convert TimeInterval to ISO8601 string
-        let date = Date(timeIntervalSince1970: timestamp)
-        let formatter = ISO8601DateFormatter()
-
         return [
             "barcode": barcode,
-            "timestamp": formatter.string(from: date)
+            "timestamp": Int(timestamp * 1000)
         ]
     }
 }

@@ -6,7 +6,7 @@ extension RfidInventoryStats {
     /// Convert RfidInventoryStats to Dictionary for Flutter platform channel
     func toDictionary() -> [String: Any] {
         return [
-            "uniqueCount": uniqueTagCount,
+            "uniqueTagCount": uniqueTagCount,
             "totalReads": totalReads,
             "readRate": readRate,
             "elapsedTimeMs": elapsedTimeMs

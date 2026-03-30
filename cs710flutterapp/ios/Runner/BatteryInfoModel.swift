@@ -5,13 +5,11 @@ import CSL_CS710S_Library
 extension BatteryInfo {
     /// Convert BatteryInfo to Dictionary for Flutter platform channel
     func toDictionary() -> [String: Any] {
-        let formatter = ISO8601DateFormatter()
-
         return [
-            "level": level,              // 0-100%
-            "voltage": 0.0,              // Not provided by iOS SDK
-            "timestamp": formatter.string(from: Date()),
-            "isCharging": isCharging     // If available
+            "level": level,
+            "voltage": 0.0,
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000),
+            "charging": isCharging
         ]
     }
 

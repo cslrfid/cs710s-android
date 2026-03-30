@@ -43,6 +43,9 @@ class RfidPlatformChannel: NSObject {
     private var tags: [String: RfidTag] = [:]  // EPC -> Tag
     private var barcodes: [BarcodeData] = []
 
+    // MARK: - Geiger State
+    private var currentGeigerTargetEpc: String = ""
+
     // MARK: - Timers
     private var rssiTimeoutTimer: Timer?
     private var geigerRateTimer: Timer?
@@ -349,9 +352,6 @@ extension RfidPlatformChannel: RfidConnectionDelegate {
 
         // Auto-start battery monitoring (match Android behavior)
         rfidManager.startBatteryMonitoring(delegate: self)
-
-        // Auto-enable trigger
-        rfidManager.enableTrigger(delegate: self)
     }
 
     func onDisconnected(_ reader: RfidReader?, error: RfidError?) {
@@ -511,47 +511,38 @@ extension RfidPlatformChannel: RfidInventoryDelegate {
     }
 
     func onTagRead(_ tag: RfidTag) {
-        // Store/update tag
         tags[tag.epc] = tag
 
-        let tagDict = tag.toDictionary()
-        let eventData: [String: Any] = [
+        sendEvent(to: inventoryEventSink, data: [
             "type": "tagRead",
-            "tag": tagDict
-        ]
-
-        NSLog("📱 iOS: onTagRead called - EPC: \(tag.epc), RSSI: \(tag.rssi)")
-        NSLog("📱 iOS: Tag dictionary: \(tagDict)")
-        NSLog("📱 iOS: Event data: \(eventData)")
-        NSLog("📱 iOS: inventoryEventSink is nil? \(inventoryEventSink == nil)")
-
-        sendEvent(to: inventoryEventSink, data: eventData)
-
-        NSLog("📱 iOS: Event sent to Flutter")
+            "tag": tag.toDictionary()
+        ])
     }
 
     func onInventoryRound(_ stats: RfidInventoryStats) {
         sendEvent(to: inventoryEventSink, data: [
             "type": "inventoryRound",
-            "stats": [
-                "uniqueCount": stats.uniqueTagCount,
-                "totalReads": stats.totalReads,
-                "readRate": stats.readRate,
-                "elapsedTimeMs": 0  // TODO: Track elapsed time
-            ]
+            "stats": stats.toDictionary()
         ])
     }
 
     func onInventoryStopped(_ reason: RfidStopReason) {
+        let totalReads = tags.values.reduce(0) { $0 + $1.count }
         sendEvent(to: inventoryEventSink, data: [
             "type": "inventoryStopped",
-            "reason": reason.description
+            "reason": reason.description,
+            "stats": [
+                "uniqueTagCount": tags.count,
+                "totalReads": totalReads,
+                "readRate": 0.0,
+                "elapsedTimeMs": 0
+            ]
         ])
     }
 
     func onInventoryError(_ error: RfidError) {
         sendEvent(to: inventoryEventSink, data: [
-            "type": "error",
+            "type": "inventoryError",
             "error": error.toDictionary()
         ])
     }
@@ -566,10 +557,12 @@ extension RfidPlatformChannel: RfidInventoryDelegate {
 extension RfidPlatformChannel: RfidGeigerDelegate {
     private func startGeigerSearch(call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard let args = call.arguments as? [String: Any],
-              let targetEpc = args["targetEpc"] as? String else {
-            result(FlutterError(code: "INVALID_ARGS", message: "Missing targetEpc", details: nil))
+              let targetEpc = args["epc"] as? String else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing epc", details: nil))
             return
         }
+
+        currentGeigerTargetEpc = targetEpc
 
         // Reset timers
         stopGeigerTimers()
@@ -586,29 +579,24 @@ extension RfidPlatformChannel: RfidGeigerDelegate {
     }
 
     func onSearchStarted() {
-        sendEvent(to: geigerEventSink, data: ["type": "searchStarted"])
+        sendEvent(to: geigerEventSink, data: [
+            "type": "geigerStarted",
+            "epc": currentGeigerTargetEpc
+        ])
     }
 
     func onProximityUpdate(_ stats: RfidGeigerStats) {
-        // Calculate read rate manually (delta from last second)
-        _ = stats.readCount - lastGeigerReadCount
         lastGeigerReadCount = stats.readCount
-
-        sendEvent(to: geigerEventSink, data: [
-            "type": "rssiUpdate",
-            "rssi": Int(stats.currentRssi),  // Convert Double to Int
-            "stats": stats.toDictionary()
-        ])
 
         sendEvent(to: geigerEventSink, data: [
             "type": "proximityUpdate",
             "stats": [
-                "targetEpc": "",
+                "targetEpc": currentGeigerTargetEpc,
                 "currentRssi": stats.currentRssi,
                 "peakRssi": stats.peakRssi,
                 "readCount": stats.readCount,
                 "proximity": stats.proximity,
-                "elapsedTimeMs": 0
+                "elapsedTimeMs": stats.elapsedTimeMs
             ]
         ])
 
@@ -618,8 +606,16 @@ extension RfidPlatformChannel: RfidGeigerDelegate {
 
     func onSearchStopped(_ reason: RfidStopReason) {
         sendEvent(to: geigerEventSink, data: [
-            "type": "searchStopped",
-            "reason": reason.description
+            "type": "geigerStopped",
+            "reason": reason.description,
+            "stats": [
+                "targetEpc": currentGeigerTargetEpc,
+                "currentRssi": 0.0,
+                "peakRssi": 0.0,
+                "readCount": lastGeigerReadCount,
+                "proximity": 0,
+                "elapsedTimeMs": 0
+            ]
         ])
 
         stopGeigerTimers()
@@ -627,7 +623,7 @@ extension RfidPlatformChannel: RfidGeigerDelegate {
 
     func onSearchError(_ error: RfidError) {
         sendEvent(to: geigerEventSink, data: [
-            "type": "error",
+            "type": "geigerError",
             "error": error.toDictionary()
         ])
     }
@@ -648,7 +644,7 @@ extension RfidPlatformChannel: RfidGeigerDelegate {
             self.sendEvent(to: self.geigerEventSink, data: [
                 "type": "proximityUpdate",
                 "stats": [
-                    "targetEpc": "",
+                    "targetEpc": self.currentGeigerTargetEpc,
                     "currentRssi": 0,
                     "peakRssi": 0,
                     "readCount": self.lastGeigerReadCount,
@@ -679,24 +675,16 @@ extension RfidPlatformChannel: BarcodeScanDelegate {
             barcodes.append(data)
         }
 
-        let formatter = ISO8601DateFormatter()
         sendEvent(to: barcodeEventSink, data: [
             "type": "barcodeScanned",
-            "barcode": [
-                "barcode": data.barcode,
-                "timestamp": formatter.string(from: Date(timeIntervalSince1970: data.timestamp))
-            ]
+            "barcode": data.toDictionary()
         ])
     }
 
     func onStatisticsUpdate(_ stats: BarcodeStats) {
         sendEvent(to: barcodeEventSink, data: [
-            "type": "scanUpdate",
-            "stats": [
-                "totalScans": stats.totalScans,
-                "uniqueBarcodes": stats.uniqueBarcodes,
-                "elapsedTimeMs": 0  // TODO: Track elapsed time
-            ]
+            "type": "barcodeStats",
+            "stats": stats.toDictionary()
         ])
     }
 
@@ -715,11 +703,10 @@ extension RfidPlatformChannel: BarcodeScanDelegate {
 // MARK: - Battery Implementation
 extension RfidPlatformChannel: BatteryDelegate {
     private func getBatteryInfo(result: @escaping FlutterResult) {
-        // TODO: Get battery info from SDK
         result([
             "level": 0,
             "voltage": 0.0,
-            "timestamp": ISO8601DateFormatter().string(from: Date())
+            "timestamp": Int(Date().timeIntervalSince1970 * 1000)
         ])
     }
 
@@ -731,11 +718,7 @@ extension RfidPlatformChannel: BatteryDelegate {
     func onBatteryUpdate(_ info: BatteryInfo) {
         sendEvent(to: batteryEventSink, data: [
             "type": "batteryUpdate",
-            "battery": [
-                "level": info.level,
-                "voltage": 0.0,  // Not provided by iOS SDK
-                "timestamp": ISO8601DateFormatter().string(from: Date())
-            ]
+            "battery": info.toDictionary()
         ])
     }
 

@@ -5,15 +5,11 @@ import CSL_CS710S_Library
 extension RfidTag {
     /// Convert RfidTag to Dictionary for Flutter platform channel
     func toDictionary() -> [String: Any] {
-        // Convert TimeInterval to ISO8601 string
-        let date = Date(timeIntervalSince1970: timestamp)
-        let formatter = ISO8601DateFormatter()
-
         return [
             "epc": epc,
-            "rssi": Int(rssi),  // Convert Double to Int for Flutter/Android compatibility
+            "rssi": Int(rssi),
             "count": count,
-            "timestamp": formatter.string(from: date),
+            "timestamp": Int(timestamp * 1000),
             "phase": phase,
             "channel": channel
         ]
