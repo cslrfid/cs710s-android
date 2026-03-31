@@ -232,8 +232,15 @@ class RfidChannel {
       _connectionEvents.receiveBroadcastStream().map(_convertMap);
 
   /// Stream of inventory events (tag read, round update, stopped, error)
-  Stream<Map<String, dynamic>> get inventoryEvents =>
-      _inventoryEvents.receiveBroadcastStream().map(_convertMap);
+  Stream<Map<String, dynamic>> get inventoryEvents {
+    print('📱 Flutter: Subscribing to inventory events stream');
+    return _inventoryEvents.receiveBroadcastStream().map((event) {
+      print('📱 Flutter: Raw inventory event received from native: $event');
+      final converted = _convertMap(event);
+      print('📱 Flutter: Converted inventory event: $converted');
+      return converted;
+    });
+  }
 
   /// Stream of Geiger events (proximity update, started, stopped, error)
   Stream<Map<String, dynamic>> get geigerEvents =>
