@@ -1,7 +1,5 @@
-include ':app'
 include ':cslibrary4a'
 include ':epctagcoder'
-include ':MqttAndroidClient'
 include ':csl-rfid-android-sdk'
 include ':cs710aquickstart'
 
@@ -11,7 +9,5 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url 'https://jitpack.io' }
-        maven { url "https://repo.eclipse.org/content/repositories/paho-snapshots/" }
-        maven { url "https://repo.eclipse.org/content/repositories/paho-releases/" }
     }
 }

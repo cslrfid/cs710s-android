@@ -1,0 +1,13 @@
+jdk:
+  - openjdk17
+
+before_install:
+  - chmod +x gradlew
+
+install:
+  - ./gradlew :epctagcoder:publishToMavenLocal
+      :cslibrary4a:publishToMavenLocal
+      :csl-rfid-android-sdk:publishToMavenLocal
+      -x test
+      --no-daemon
+      --no-configuration-cache
