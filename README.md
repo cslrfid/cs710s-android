@@ -1,5 +1,11 @@
 # CS710S-Android — JitPack Library Distribution
 
+[![Platform](https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white)](https://www.android.com/)
+[![Language](https://img.shields.io/badge/language-Java-007396?logo=openjdk&logoColor=white)](https://www.java.com/)
+[![License](https://img.shields.io/github/license/cslrfid/cs710s-android)](LICENSE)
+[![Release](https://img.shields.io/github/v/tag/cslrfid/cs710s-android?label=release&sort=semver)](https://github.com/cslrfid/cs710s-android/tags)
+[![JitPack](https://jitpack.io/v/cslrfid/cs710s-android.svg)](https://jitpack.io/#cslrfid/cs710s-android)
+
 This repository publishes three Android libraries for the CS710S/CS108 RFID readers via [JitPack](https://jitpack.io), plus a quick-start demo app you can build locally.
 
 [Product information](https://www.convergence.com.hk/cs710s/)
