@@ -1,52 +1,38 @@
-# CSL RFID Android SDK - Technical Documentation
+# CSL RFID Android SDK
 
 **Module**: csl-rfid-android-sdk
-**Status**: ✅ **Production Ready**
-**Last Updated**: January 2025
-**Version**: 1.0.0
+
+A clean, callback-based Android wrapper around the `cslibrary4a` vendor SDK for CSL CS710S RFID readers.
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
+1. [Overview](#overview)
 2. [Module Architecture](#module-architecture)
 3. [Package Structure](#package-structure)
-4. [Core Components](#core-components)
-5. [Manager Classes](#manager-classes)
-6. [Data Models](#data-models)
-7. [Configuration System](#configuration-system)
-8. [Thread Management](#thread-management)
-9. [API Reference](#api-reference)
-10. [Implementation Patterns](#implementation-patterns)
-11. [Integration Guide](#integration-guide)
+4. [Integration Guide](#integration-guide)
+5. [Build Requirements](#build-requirements)
+6. [Core Components](#core-components)
+7. [Manager Classes](#manager-classes)
+8. [Data Models](#data-models)
+9. [Configuration System](#configuration-system)
+10. [Thread Management](#thread-management)
+11. [API Reference](#api-reference)
+12. [Implementation Patterns](#implementation-patterns)
+13. [Key Implementation Decisions](#key-implementation-decisions)
+14. [Advanced Features](#advanced-features)
 
 ---
 
-## Executive Summary
+## Overview
 
-The **csl-rfid-android-sdk** module provides a clean, modern Android wrapper around the `cslibrary4a` vendor SDK for CSL CS710S RFID readers. It simplifies RFID operations with:
+The **csl-rfid-android-sdk** module simplifies RFID operations on top of the `cslibrary4a` vendor SDK with:
 
 - **Clean API**: Intuitive, callback-based interface
 - **Thread Safety**: Automatic background/main thread management
 - **MVVM Ready**: LiveData-compatible callbacks
 - **Comprehensive**: All core RFID operations supported
-- **Production Quality**: Error handling, resource management, documentation
-
-### Module Status
-
-| Component | Status | Lines |
-|-----------|--------|-------|
-| RfidManager | ✅ Complete | 778 |
-| RfidConnectionManager | ✅ Complete | 443 |
-| RfidInventoryManager | ✅ Complete | 345 |
-| RfidGeigerManager | ✅ Complete | 330 |
-| RfidConfigurationManager | ✅ Complete | 165 |
-| BarcodeScanManager | ✅ Complete | 210 |
-| Data Models | ✅ Complete | ~650 |
-| Callbacks | ✅ Complete | ~230 |
-| Internal Utilities | ✅ Complete | ~164 |
-| **Total** | **✅ Production Ready** | **~3,300** |
 
 ---
 
@@ -90,10 +76,10 @@ The **csl-rfid-android-sdk** module provides a clean, modern Android wrapper aro
 
 ```
 com.csl.rfidsdk/
-├── RfidManager.java                    # Main API entry point (778 lines)
-├── RfidManagerBuilder.java             # Builder pattern for setup (58 lines)
+├── RfidManager.java                    # Main API entry point
+├── RfidManagerBuilder.java             # Builder pattern for setup
 │
-├── callbacks/                          # Callback Interfaces (8 files)
+├── callbacks/                          # Callback Interfaces
 │   ├── RfidScanCallback.java           # Reader scan events
 │   ├── RfidConnectionCallback.java     # Connection events (with onReaderReady)
 │   ├── RfidInventoryCallback.java      # Tag inventory events
@@ -103,24 +89,24 @@ com.csl.rfidsdk/
 │   ├── BarcodeScanCallback.java        # Barcode scan events
 │   └── TriggerCallback.java            # Trigger key events
 │
-├── config/                             # Configuration Enums (4 files)
+├── config/                             # Configuration Enums
 │   ├── RfidRegion.java                 # FCC, ETSI, Japan, etc.
 │   ├── RfidTarget.java                 # A, B, AB_FLIP
 │   ├── RfidInventoryMode.java          # COMPACT, STANDARD
 │   └── RfidStopReason.java             # Stop reasons
 │
-├── internal/                           # Internal Utilities (2 files)
-│   ├── SdkBridge.java                  # SDK wrapper (70 lines)
-│   └── ThreadManager.java              # Thread management (94 lines)
+├── internal/                           # Internal Utilities
+│   ├── SdkBridge.java                  # SDK wrapper
+│   └── ThreadManager.java              # Thread management
 │
-├── managers/                           # Core Managers (5 files)
-│   ├── RfidConnectionManager.java      # BLE scan/connect (443 lines)
-│   ├── RfidInventoryManager.java       # Tag inventory (345 lines)
-│   ├── RfidGeigerManager.java          # Tag locating (330 lines)
-│   ├── RfidConfigurationManager.java   # Reader config (165 lines)
-│   └── BarcodeScanManager.java         # Barcode scanning (210 lines)
+├── managers/                           # Core Managers
+│   ├── RfidConnectionManager.java      # BLE scan/connect
+│   ├── RfidInventoryManager.java       # Tag inventory
+│   ├── RfidGeigerManager.java          # Tag locating
+│   ├── RfidConfigurationManager.java   # Reader config
+│   └── BarcodeScanManager.java         # Barcode scanning
 │
-└── models/                             # Data Models (10 files)
+└── models/                             # Data Models
     ├── RfidReader.java                 # Reader device info
     ├── RfidTag.java                    # Tag data (EPC, RSSI, etc.)
     ├── RfidError.java                  # Error information
@@ -130,6 +116,148 @@ com.csl.rfidsdk/
     ├── BatteryInfo.java                # Battery status data
     ├── BarcodeData.java                # Barcode scan result
     └── BarcodeStats.java               # Barcode statistics
+```
+
+---
+
+## Integration Guide
+
+### Step 1: Add Dependency
+
+Add the SDK module to your `build.gradle`:
+
+```gradle
+dependencies {
+    implementation project(':csl-rfid-android-sdk')
+}
+```
+
+### Step 2: Add Permissions
+
+Add required permissions to your `AndroidManifest.xml`:
+
+```xml
+<!-- Bluetooth -->
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+<!-- Location (required for BLE scanning) -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+```
+
+### Step 3: Create RfidManager
+
+Create a singleton instance in your Application class:
+
+```java
+public class MyApplication extends Application {
+    private RfidManager rfidManager;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        rfidManager = RfidManager.create(this);
+    }
+
+    public RfidManager getRfidManager() {
+        return rfidManager;
+    }
+}
+```
+
+### Step 4: Use in ViewModel
+
+Access RfidManager in your ViewModel:
+
+```java
+public class InventoryViewModel extends AndroidViewModel {
+    private final RfidManager rfidManager;
+    private final MutableLiveData<List<RfidTag>> tags = new MutableLiveData<>();
+
+    public InventoryViewModel(Application app) {
+        super(app);
+        this.rfidManager = ((MyApplication) app).getRfidManager();
+    }
+
+    public void startInventory() {
+        rfidManager.startInventory(new RfidInventoryCallback() {
+            @Override
+            public void onTagRead(RfidTag tag) {
+                // Update LiveData
+                List<RfidTag> currentTags = tags.getValue();
+                currentTags.add(tag);
+                tags.setValue(currentTags);
+            }
+
+            @Override
+            public void onInventoryRound(RfidInventoryStats stats) {
+                // Update stats
+            }
+
+            @Override
+            public void onInventoryStopped(RfidStopReason reason) {
+                // Handle stop
+            }
+
+            @Override
+            public void onInventoryError(RfidError error) {
+                // Handle error
+            }
+        });
+    }
+
+    @Override
+    protected void onCleared() {
+        rfidManager.stopInventory();
+    }
+}
+```
+
+### Step 5: Observe in Activity
+
+Observe LiveData in your Activity:
+
+```java
+public class InventoryActivity extends AppCompatActivity {
+    private InventoryViewModel viewModel;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_inventory);
+
+        viewModel = new ViewModelProvider(this).get(InventoryViewModel.class);
+
+        viewModel.getTags().observe(this, tags -> {
+            // Update UI with tags
+        });
+    }
+}
+```
+
+---
+
+## Build Requirements
+
+- **Java 17 or higher**
+- **Android Studio Giraffe or newer**
+- **Android SDK API 26+** (Android 8.0+)
+- **Gradle 8.13.0**
+
+### Build Commands
+
+```bash
+# Build SDK wrapper
+./gradlew :csl-rfid-android-sdk:build
+
+# Build AAR
+./gradlew :csl-rfid-android-sdk:assembleRelease
+
+# Run tests
+./gradlew :csl-rfid-android-sdk:test
 ```
 
 ---
@@ -244,7 +372,7 @@ RfidManager rfidManager = RfidManager.builder(context)
 
 ### 1. RfidConnectionManager
 
-**File**: `managers/RfidConnectionManager.java` (329 lines)
+**File**: `managers/RfidConnectionManager.java`
 
 **Purpose**: Manages BLE scanning and connection to RFID readers
 
@@ -334,7 +462,7 @@ public void connect(RfidReader reader, RfidConnectionCallback callback) {
 
 ### 2. RfidInventoryManager
 
-**File**: `managers/RfidInventoryManager.java` (345 lines)
+**File**: `managers/RfidInventoryManager.java`
 
 **Purpose**: Manages RFID tag inventory (reading) operations
 
@@ -475,7 +603,7 @@ This ensures RSSI displays correctly as negative values (e.g., -50 dBm instead o
 
 ### 3. RfidGeigerManager
 
-**File**: `managers/RfidGeigerManager.java` (330 lines)
+**File**: `managers/RfidGeigerManager.java`
 
 **Purpose**: Manages Geiger search (tag locating) operations
 
@@ -611,7 +739,7 @@ public void stopGeigerSearch() {
 
 ### 4. RfidConfigurationManager
 
-**File**: `managers/RfidConfigurationManager.java` (165 lines)
+**File**: `managers/RfidConfigurationManager.java`
 
 **Purpose**: Manages reader configuration settings
 
@@ -704,7 +832,7 @@ Region configuration is intentionally skipped because:
 
 ### 5. BarcodeScanManager
 
-**File**: `managers/BarcodeScanManager.java` (210 lines)
+**File**: `managers/BarcodeScanManager.java`
 
 **Purpose**: Manages barcode scanning operations
 
@@ -1140,7 +1268,7 @@ rfidManager.configure()
 
 ### ThreadManager
 
-**File**: `internal/ThreadManager.java` (94 lines)
+**File**: `internal/ThreadManager.java`
 
 **Purpose**: Manages background and main thread execution
 
@@ -1214,7 +1342,7 @@ public class ThreadManager {
 
 ### SdkBridge
 
-**File**: `internal/SdkBridge.java` (70 lines)
+**File**: `internal/SdkBridge.java`
 
 **Purpose**: Wraps CsLibrary4A SDK instance
 
@@ -1657,148 +1785,6 @@ RfidTag tag = new RfidTag.Builder("E28011700000020EA9E44444")
 
 ---
 
-## Integration Guide
-
-### Step 1: Add Dependency
-
-Add the SDK module to your `build.gradle`:
-
-```gradle
-dependencies {
-    implementation project(':csl-rfid-android-sdk')
-}
-```
-
-### Step 2: Add Permissions
-
-Add required permissions to your `AndroidManifest.xml`:
-
-```xml
-<!-- Bluetooth -->
-<uses-permission android:name="android.permission.BLUETOOTH" />
-<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-
-<!-- Location (required for BLE scanning) -->
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-```
-
-### Step 3: Create RfidManager
-
-Create a singleton instance in your Application class:
-
-```java
-public class MyApplication extends Application {
-    private RfidManager rfidManager;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        rfidManager = RfidManager.create(this);
-    }
-
-    public RfidManager getRfidManager() {
-        return rfidManager;
-    }
-}
-```
-
-### Step 4: Use in ViewModel
-
-Access RfidManager in your ViewModel:
-
-```java
-public class InventoryViewModel extends AndroidViewModel {
-    private final RfidManager rfidManager;
-    private final MutableLiveData<List<RfidTag>> tags = new MutableLiveData<>();
-
-    public InventoryViewModel(Application app) {
-        super(app);
-        this.rfidManager = ((MyApplication) app).getRfidManager();
-    }
-
-    public void startInventory() {
-        rfidManager.startInventory(new RfidInventoryCallback() {
-            @Override
-            public void onTagRead(RfidTag tag) {
-                // Update LiveData
-                List<RfidTag> currentTags = tags.getValue();
-                currentTags.add(tag);
-                tags.setValue(currentTags);
-            }
-
-            @Override
-            public void onInventoryRound(RfidInventoryStats stats) {
-                // Update stats
-            }
-
-            @Override
-            public void onInventoryStopped(RfidStopReason reason) {
-                // Handle stop
-            }
-
-            @Override
-            public void onInventoryError(RfidError error) {
-                // Handle error
-            }
-        });
-    }
-
-    @Override
-    protected void onCleared() {
-        rfidManager.stopInventory();
-    }
-}
-```
-
-### Step 5: Observe in Activity
-
-Observe LiveData in your Activity:
-
-```java
-public class InventoryActivity extends AppCompatActivity {
-    private InventoryViewModel viewModel;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_inventory);
-
-        viewModel = new ViewModelProvider(this).get(InventoryViewModel.class);
-
-        viewModel.getTags().observe(this, tags -> {
-            // Update UI with tags
-        });
-    }
-}
-```
-
----
-
-## Build Requirements
-
-- **Java 17 or higher**
-- **Android Studio Giraffe or newer**
-- **Android SDK API 26+** (Android 8.0+)
-- **Gradle 8.13.0**
-
-### Build Commands
-
-```bash
-# Build SDK wrapper
-./gradlew :csl-rfid-android-sdk:build
-
-# Build AAR
-./gradlew :csl-rfid-android-sdk:assembleRelease
-
-# Run tests
-./gradlew :csl-rfid-android-sdk:test
-```
-
----
-
 ## Key Implementation Decisions
 
 ### 1. Lazy SDK Initialization
@@ -2019,26 +2005,3 @@ rfidManager.connect(reader, new RfidConnectionCallback() {
 - BLE connection: 20 seconds
 - Reader initialization: 15 seconds
 - Total connection time: Up to 35 seconds
-
----
-
-## Conclusion
-
-The **csl-rfid-android-sdk** module provides a production-ready, clean API for CSL CS710S RFID operations on Android. Key features:
-
-✅ **Clean Architecture**: Well-organized packages and clear responsibilities
-✅ **Thread Safety**: Proper background/main thread management
-✅ **Error Handling**: Comprehensive error reporting via callbacks
-✅ **Modern Android**: MVVM-compatible, LiveData-friendly
-✅ **Complete Features**: RFID inventory, Geiger search, barcode scanning, battery monitoring, trigger support
-✅ **Advanced Operations**: Reader initialization, hardware trigger integration
-✅ **Production Quality**: Tested, documented, and ready for integration
-
-**Status**: ✅ **PRODUCTION READY**
-
----
-
-**Document Version**: 2.0.0
-**Last Updated**: January 2025
-**Total Lines of Code**: ~3,300 lines
-**Total Files**: 28 files (8 callbacks, 5 managers, 10 models, 5 other)

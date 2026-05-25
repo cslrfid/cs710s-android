@@ -1,50 +1,38 @@
-# CS710 QuickStart App - Technical Documentation
+# CS710 QuickStart App
 
 **Module**: cs710aquickstart
-**Status**: ✅ **Production Ready**
-**Last Updated**: January 2025
-**Version**: 1.0.0
+
+An Android application demonstrating RFID operations against the CSL CS710S reader using the `csl-rfid-android-sdk` wrapper.
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
+1. [Overview](#overview)
 2. [Application Architecture](#application-architecture)
-3. [Activities](#activities)
-4. [ViewModels](#viewmodels)
-5. [RecyclerView Adapters](#recyclerview-adapters)
-6. [UI Resources](#ui-resources)
-7. [Key Features](#key-features)
-8. [User Workflows](#user-workflows)
-9. [Build and Deployment](#build-and-deployment)
+3. [Build and Deployment](#build-and-deployment)
+4. [Activities](#activities)
+5. [ViewModels](#viewmodels)
+6. [RecyclerView Adapters](#recyclerview-adapters)
+7. [UI Resources](#ui-resources)
+8. [Key Features](#key-features)
+9. [User Workflows](#user-workflows)
 10. [Testing Guide](#testing-guide)
+11. [Limitations](#limitations)
+12. [Future Enhancements](#future-enhancements)
 
 ---
 
-## Executive Summary
+## Overview
 
-The **CS710 QuickStart** app is a production-ready Android application demonstrating RFID operations using the `csl-rfid-android-sdk`. It showcases:
+The **CS710 QuickStart** app demonstrates RFID workflows on top of the `csl-rfid-android-sdk`:
 
 - **Complete RFID Workflows**: Scan, connect, inventory, Geiger search
 - **MVVM Architecture**: Clean separation with ViewModels and LiveData
 - **Material Design**: Modern Android UI with RecyclerViews
 - **Automatic Configuration**: Reader settings applied on inventory load
-- **Production Features**: RSSI in dBm, CSL branding, error handling
-
-### Module Status
-
-| Component | Status | Details |
-|-----------|--------|---------|
-| MainActivity | ✅ Complete | Home screen with navigation |
-| ScanActivity | ✅ Complete | Reader scanning with loading overlay |
-| InventoryActivity | ✅ Complete | Tag inventory with trigger support |
-| GeigerSearchActivity | ✅ Complete | Tag locating with trigger support |
-| ScanViewModel | ✅ Complete | Scan logic with connection states |
-| InventoryViewModel | ✅ Complete | Inventory logic |
-| GeigerViewModel | ✅ Complete | Geiger logic |
-| UI Layouts | ✅ Complete | 7 XML layouts |
-| **Total** | **✅ Production Ready** | **~1,850 lines** |
+- **Hardware Integration**: Battery monitoring, trigger key support
+- **RSSI in dBm, CSL branding, comprehensive error handling**
 
 ---
 
@@ -122,11 +110,82 @@ cs710aquickstart/
 
 ---
 
+## Build and Deployment
+
+### Requirements
+
+- **Java 17 or higher**
+- **Android Studio Giraffe or newer**
+- **Android SDK API 26+** (Android 8.0+)
+- **Gradle 8.13.0**
+
+### Build Commands
+
+```bash
+# Build QuickStart app
+./gradlew :cs710aquickstart:build
+
+# Build debug APK
+./gradlew :cs710aquickstart:assembleDebug
+
+# Build release APK
+./gradlew :cs710aquickstart:assembleRelease
+
+# Install on device
+./gradlew :cs710aquickstart:installDebug
+
+# Clean build
+./gradlew clean :cs710aquickstart:build
+```
+
+### APK Output
+
+**Debug APK**: `cs710aquickstart/build/outputs/apk/debug/cs710aquickstart-debug.apk`
+
+**Release APK**: `cs710aquickstart/build/outputs/apk/release/cs710aquickstart-release.apk`
+
+### Installation
+
+```bash
+# Via Gradle
+./gradlew :cs710aquickstart:installDebug
+
+# Via ADB
+adb install cs710aquickstart/build/outputs/apk/debug/cs710aquickstart-debug.apk
+
+# Check if installed
+adb shell pm list packages | grep cs710aquickstart
+```
+
+### Permissions
+
+The app requests these permissions at runtime:
+
+```xml
+<!-- Bluetooth -->
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+<!-- Location (required for BLE scanning on Android) -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+```
+
+**Runtime Permission Flow**:
+1. App requests permissions in MainActivity.onCreate()
+2. User sees system permission dialog
+3. User grants/denies permissions
+4. App checks permissions before BLE scanning
+
+---
+
 ## Activities
 
 ### 1. MainActivity
 
-**File**: `MainActivity.java` (~120 lines)
+**File**: `MainActivity.java`
 
 **Purpose**: Home screen with navigation to features
 
@@ -193,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
 
 ### 2. ScanActivity
 
-**File**: `ScanActivity.java` (~158 lines)
+**File**: `ScanActivity.java`
 
 **Purpose**: Scan for and connect to RFID readers
 
@@ -282,7 +341,7 @@ public class ScanActivity extends AppCompatActivity {
 
 ### 3. InventoryActivity
 
-**File**: `InventoryActivity.java` (~252 lines)
+**File**: `InventoryActivity.java`
 
 **Purpose**: Read RFID tags and display statistics
 
@@ -326,7 +385,6 @@ protected void onCreate(Bundle savedInstanceState) {
 
 /**
  * Apply reader configuration when inventory page loads
- * Configuration as specified in rfid-wrapper-proposal.md section 3.4
  */
 private void applyReaderConfiguration() {
     viewModel.getRfidManager().configure()
@@ -405,7 +463,7 @@ private void onTagClick(RfidTag tag) {
 
 ### 4. GeigerSearchActivity
 
-**File**: `GeigerSearchActivity.java` (~235 lines)
+**File**: `GeigerSearchActivity.java`
 
 **Purpose**: Locate a specific tag using RSSI proximity
 
@@ -538,7 +596,7 @@ All ViewModels follow the same pattern:
 
 ### 1. ScanViewModel
 
-**File**: `viewmodels/ScanViewModel.java` (~180 lines)
+**File**: `viewmodels/ScanViewModel.java`
 
 **Purpose**: Manages reader scanning and connection logic
 
@@ -613,7 +671,7 @@ protected void onCleared() {
 
 ### 2. InventoryViewModel
 
-**File**: `viewmodels/InventoryViewModel.java` (~200 lines)
+**File**: `viewmodels/InventoryViewModel.java`
 
 **Purpose**: Manages tag inventory logic
 
@@ -688,7 +746,7 @@ protected void onCleared() {
 
 ### 3. GeigerViewModel
 
-**File**: `viewmodels/GeigerViewModel.java` (~140 lines)
+**File**: `viewmodels/GeigerViewModel.java`
 
 **Purpose**: Manages Geiger search logic
 
@@ -747,7 +805,7 @@ protected void onCleared() {
 
 ### 1. ReaderListAdapter
 
-**File**: `adapters/ReaderListAdapter.java` (~90 lines)
+**File**: `adapters/ReaderListAdapter.java`
 
 **Purpose**: Display list of discovered RFID readers
 
@@ -819,7 +877,7 @@ public class ReaderListAdapter extends ListAdapter<RfidReader, ReaderListAdapter
 
 ### 2. TagListAdapter
 
-**File**: `adapters/TagListAdapter.java` (~90 lines)
+**File**: `adapters/TagListAdapter.java`
 
 **Purpose**: Display list of scanned RFID tags
 
@@ -1136,7 +1194,7 @@ public class TagListAdapter extends ListAdapter<RfidTag, TagListAdapter.ViewHold
 
 **Timeout**: Up to 35 seconds (20s connection + 15s initialization)
 
-**Implementation**: `ScanActivity.java:96-113`, `loading_overlay.xml`
+**Implementation**: `ScanActivity.java`, `loading_overlay.xml`
 
 **User Experience**:
 - No UI interaction during connection
@@ -1154,7 +1212,7 @@ public class TagListAdapter extends ListAdapter<RfidTag, TagListAdapter.ViewHold
 
 **When**: Starts automatically in `onResume()` of InventoryActivity and GeigerSearchActivity
 
-**Implementation**: `InventoryActivity.java:175-188`
+**Implementation**: `InventoryActivity.java`
 
 ```java
 @Override
@@ -1196,7 +1254,7 @@ private final BatteryCallback batteryCallback = new BatteryCallback() {
 
 **State Validation**: Prevents spurious actions by checking button text before clicking
 
-**Implementation**: `InventoryActivity.java:193-210`, `GeigerSearchActivity.java:205-222`
+**Implementation**: `InventoryActivity.java`, `GeigerSearchActivity.java`
 
 ```java
 private final TriggerCallback triggerCallback = new TriggerCallback() {
@@ -1242,7 +1300,7 @@ protected void onResume() {
 - Visible when inventory starts
 - Shows real-time stats (unique count, total reads, rate)
 
-**Implementation**: `InventoryActivity.java:138-149`
+**Implementation**: `InventoryActivity.java`
 
 ```java
 // Observe inventory state
@@ -1275,7 +1333,7 @@ viewModel.isInventorying().observe(this, inventorying -> {
 - Vibrate: Enabled
 - RSSI Display: dBm mode
 
-**Implementation**: `InventoryActivity.java:132-156`
+**Implementation**: `InventoryActivity.java`
 
 **User Experience**:
 - Configuration happens transparently
@@ -1317,7 +1375,7 @@ viewModel.isInventorying().observe(this, inventorying -> {
 4. Target EPC pre-filled from clicked tag
 5. User can immediately start search
 
-**Implementation**: `InventoryActivity.java:120-125`
+**Implementation**: `InventoryActivity.java`
 
 ### 9. Error Handling
 
@@ -1405,77 +1463,6 @@ viewModel.isInventorying().observe(this, inventorying -> {
 
 ---
 
-## Build and Deployment
-
-### Requirements
-
-- **Java 17 or higher**
-- **Android Studio Giraffe or newer**
-- **Android SDK API 26+** (Android 8.0+)
-- **Gradle 8.13.0**
-
-### Build Commands
-
-```bash
-# Build QuickStart app
-./gradlew :cs710aquickstart:build
-
-# Build debug APK
-./gradlew :cs710aquickstart:assembleDebug
-
-# Build release APK
-./gradlew :cs710aquickstart:assembleRelease
-
-# Install on device
-./gradlew :cs710aquickstart:installDebug
-
-# Clean build
-./gradlew clean :cs710aquickstart:build
-```
-
-### APK Output
-
-**Debug APK**: `cs710aquickstart/build/outputs/apk/debug/cs710aquickstart-debug.apk`
-
-**Release APK**: `cs710aquickstart/build/outputs/apk/release/cs710aquickstart-release.apk`
-
-### Installation
-
-```bash
-# Via Gradle
-./gradlew :cs710aquickstart:installDebug
-
-# Via ADB
-adb install cs710aquickstart/build/outputs/apk/debug/cs710aquickstart-debug.apk
-
-# Check if installed
-adb shell pm list packages | grep cs710aquickstart
-```
-
-### Permissions
-
-The app requests these permissions at runtime:
-
-```xml
-<!-- Bluetooth -->
-<uses-permission android:name="android.permission.BLUETOOTH" />
-<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-
-<!-- Location (required for BLE scanning on Android) -->
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-```
-
-**Runtime Permission Flow**:
-1. App requests permissions in MainActivity.onCreate()
-2. User sees system permission dialog
-3. User grants/denies permissions
-4. App checks permissions before BLE scanning
-
----
-
 ## Testing Guide
 
 ### Manual Testing Procedures
@@ -1491,11 +1478,11 @@ The app requests these permissions at runtime:
 4. Wait 3-5 seconds
 
 **Expected Results**:
-- ✅ Reader appears in list within 5 seconds
-- ✅ Reader name shows "CS710-xxxxx"
-- ✅ Reader address shows MAC address
-- ✅ Reader RSSI shows negative value (e.g., -60 dBm)
-- ✅ Multiple readers show if available
+- Reader appears in list within 5 seconds
+- Reader name shows "CS710-xxxxx"
+- Reader address shows MAC address
+- Reader RSSI shows negative value (e.g., -60 dBm)
+- Multiple readers show if available
 
 **Pass Criteria**: At least one reader discovered
 
@@ -1508,10 +1495,10 @@ The app requests these permissions at runtime:
 2. Wait for connection (max 20 seconds)
 
 **Expected Results**:
-- ✅ "Connected" toast appears
-- ✅ Navigation back to MainActivity
-- ✅ Connection status shows "Connected: CS710-xxxxx"
-- ✅ Connection completes within 20 seconds
+- "Connected" toast appears
+- Navigation back to MainActivity
+- Connection status shows "Connected: CS710-xxxxx"
+- Connection completes within 20 seconds
 
 **Pass Criteria**: Connection successful with toast notification
 
@@ -1524,9 +1511,9 @@ The app requests these permissions at runtime:
 2. Wait for configuration
 
 **Expected Results**:
-- ✅ "Reader configured successfully" toast appears
-- ✅ Toast appears within 2 seconds of page load
-- ✅ No errors shown
+- "Reader configured successfully" toast appears
+- Toast appears within 2 seconds of page load
+- No errors shown
 
 **Pass Criteria**: Configuration toast appears
 
@@ -1541,15 +1528,15 @@ The app requests these permissions at runtime:
 4. Tap "Stop Inventory"
 
 **Expected Results**:
-- ✅ Tags appear in list as read
-- ✅ EPC shows as hex string
-- ✅ RSSI shows negative value (e.g., -50.0 dBm)
-- ✅ Count increments on multiple reads
-- ✅ Statistics update (unique count, total reads, rate)
-- ✅ Beep sounds on tag read
-- ✅ Device vibrates on tag read
-- ✅ Read rate shows 50-200 tags/sec
-- ✅ Inventory stops when button tapped
+- Tags appear in list as read
+- EPC shows as hex string
+- RSSI shows negative value (e.g., -50.0 dBm)
+- Count increments on multiple reads
+- Statistics update (unique count, total reads, rate)
+- Beep sounds on tag read
+- Device vibrates on tag read
+- Read rate shows 50-200 tags/sec
+- Inventory stops when button tapped
 
 **Pass Criteria**: Tags read successfully with correct data
 
@@ -1566,14 +1553,14 @@ The app requests these permissions at runtime:
 6. Tap "Stop Search"
 
 **Expected Results**:
-- ✅ Search starts immediately
-- ✅ Current RSSI shows negative value and updates
-- ✅ Peak RSSI shows highest value seen
-- ✅ Proximity bar updates (0-100%)
-- ✅ Bar color changes with proximity (red/orange/yellow/green)
-- ✅ Read count increments
-- ✅ Values update in real-time (< 1 second latency)
-- ✅ Search stops when button tapped
+- Search starts immediately
+- Current RSSI shows negative value and updates
+- Peak RSSI shows highest value seen
+- Proximity bar updates (0-100%)
+- Bar color changes with proximity (red/orange/yellow/green)
+- Read count increments
+- Values update in real-time (< 1 second latency)
+- Search stops when button tapped
 
 **Pass Criteria**: RSSI and proximity track distance to tag
 
@@ -1590,9 +1577,9 @@ The app requests these permissions at runtime:
 6. (same as Test 5 steps 4-6)
 
 **Expected Results**:
-- ✅ Navigation to GeigerSearchActivity
-- ✅ Target EPC field contains clicked tag's EPC
-- ✅ (same as Test 5 expected results)
+- Navigation to GeigerSearchActivity
+- Target EPC field contains clicked tag's EPC
+- (same as Test 5 expected results)
 
 **Pass Criteria**: Navigation works, EPC pre-filled correctly
 
@@ -1605,9 +1592,9 @@ The app requests these permissions at runtime:
 2. Observe list
 
 **Expected Results**:
-- ✅ All tags removed from list
-- ✅ "No tags found" message appears
-- ✅ Statistics reset to 0
+- All tags removed from list
+- "No tags found" message appears
+- Statistics reset to 0
 
 **Pass Criteria**: List cleared successfully
 
@@ -1621,7 +1608,7 @@ The app requests these permissions at runtime:
 3. Tap "Start Inventory"
 
 **Expected Results**:
-- ✅ "Not connected to reader" error shown
+- "Not connected to reader" error shown
 
 **Test 8b: Connection Lost**
 
@@ -1631,8 +1618,8 @@ The app requests these permissions at runtime:
 3. Power off reader
 
 **Expected Results**:
-- ✅ "Connection lost during inventory" error shown
-- ✅ Inventory stops automatically
+- "Connection lost during inventory" error shown
+- Inventory stops automatically
 
 **Test 8c: Configuration Failed**
 
@@ -1642,7 +1629,7 @@ The app requests these permissions at runtime:
 3. Navigate to inventory page
 
 **Expected Results**:
-- ✅ "Configuration failed" error shown
+- "Configuration failed" error shown
 
 **Pass Criteria**: All error scenarios handled gracefully
 
@@ -1676,19 +1663,13 @@ The app requests these permissions at runtime:
 
 ---
 
-## Known Issues and Limitations
-
-### Limitations
+## Limitations
 
 1. **Single Reader**: Only supports one connected reader at a time
 2. **BLE Only**: No USB or Wi-Fi connection support
 3. **Android 8.0+**: Requires API 26 or higher
 4. **No Persistence**: Tag list cleared when app closes
 5. **No Export**: Cannot export tag list to file
-
-### Known Issues
-
-None currently reported.
 
 ---
 
@@ -1714,32 +1695,3 @@ None currently reported.
 3. **Navigation Component**: Use Jetpack Navigation
 4. **Jetpack Compose**: Migrate UI to Compose
 5. **Coroutines/Flow**: Replace callbacks with Flow
-
----
-
-## Conclusion
-
-The **CS710 QuickStart** app provides a complete, production-ready Android application demonstrating RFID operations with the CSL CS710S reader. Key features:
-
-✅ **Complete Workflows**: Scan, connect, inventory, Geiger search with loading overlay
-✅ **MVVM Architecture**: Clean, testable, maintainable code
-✅ **Modern Android**: LiveData, ViewModel, RecyclerView, Material Design
-✅ **Hardware Integration**: Battery monitoring, trigger key support
-✅ **Production Quality**: Error handling, auto-configuration, branding, state management
-✅ **User Friendly**: Intuitive UI, real-time updates, clear feedback, hardware button control
-
-**New in v2.0**:
-- Connection loading overlay with initialization status
-- Real-time battery monitoring (5-second polling)
-- Hardware trigger key support (manual mode with state validation)
-- Stats TextView visibility management
-- Enhanced connection flow (CONNECTING → INITIALIZING → READY)
-
-**Status**: ✅ **PRODUCTION READY**
-
----
-
-**Document Version**: 2.0.0
-**Last Updated**: January 2025
-**Total Lines of Code**: ~1,850 lines
-**Total Files**: 10 Java files + 7 XML layouts

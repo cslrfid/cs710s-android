@@ -49,6 +49,8 @@ dependencies {
 
 ## Demo app — `cs710aquickstart`
 
+![CS710S QuickStart screens](images/cs710s-android.png)
+
 A minimal Android demo (MVVM, ViewModel-based) that exercises BLE scan, connect, inventory, Geiger search, battery monitoring, and hardware-trigger support against the wrapper SDK.
 
 ```bash
