@@ -117,6 +117,8 @@ captures/
 # Android Studio 3 in .gitignore file.
 .idea/caches
 .idea/modules.xml
+# Machine-specific JDK name (project-jdk-name) churns per developer; AS regenerates this file
+.idea/misc.xml
 # Comment next line if keeping position of elements in Navigation Editor is relevant for you
 .idea/navEditor.xml
 
