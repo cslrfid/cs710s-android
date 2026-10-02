@@ -104,8 +104,12 @@ public class RfidConnector {
                     byte[] data1 = new byte[connectorData.dataValues.length - 2]; System.arraycopy(connectorData.dataValues, 2, data1, 0, data1.length);
                     if (utility.DEBUG_PKDATA) appendToLog("PkData: matched Rfid.Reply with payload = " + byteArrayToString(connectorData.dataValues) + " for writeData Rfid." + mRfidToWrite.get(0).rfidPayloadEvent.toString() + "." + byteArrayToString(mRfidToWrite.get(0).dataValues));
                     if (connectorData.dataValues[2] != 0) {
-                        if (DEBUG) appendToLog("Rfid.reply data is found with error");
+                        rfidLastReplyError = connectorData.dataValues[2] & 0xFF;
+                        appendToLog("RfidConnector.isMatchRfidToWrite: reader rejected "
+                                + mRfidToWrite.get(0).rfidPayloadEvent + " with status "
+                                + rfidLastReplyError + "; request discarded");
                     } else {
+                        rfidLastReplyError = 0;
                         if (mRfidToWrite.get(0).rfidPayloadEvent == RfidConnector.RfidPayloadEvents.RFID_POWER_ON) {
                             rfidPowerOnTimeOut = 3000;
                             onStatus = true;
@@ -159,6 +163,10 @@ public class RfidConnector {
 
     public int sendRfidToWriteSent = 0; public boolean mRfidToWriteRemoved = false;
     public boolean rfidFailure = false; public boolean rfidValid = false;
+    // Status byte of the most recent RFID reply the reader rejected; 0 when the
+    // last reply was accepted. Lets a caller tell a refused command apart from a
+    // reader that never answered.
+    public int rfidLastReplyError = 0;
     public byte[] sendRfidToWrite(boolean usbConnection) {
         boolean DEBUG = false;
         boolean bValue = false;

@@ -12,7 +12,6 @@ android {
     compileSdk 36
     defaultConfig {
         minSdk 26
-        targetSdk 36
         buildConfigField 'String', 'VERSION_NAME', "\"0\""
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -36,6 +35,12 @@ android {
             withSourcesJar()
             withJavadocJar()
         }
+    }
+    lint {
+        targetSdk 36
+    }
+    testOptions {
+        targetSdk 36
     }
 }
 
