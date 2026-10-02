@@ -8,6 +8,7 @@ install:
   - ./gradlew :epctagcoder:publishToMavenLocal
       :cslibrary4a:publishToMavenLocal
       :csl-rfid-android-sdk:publishToMavenLocal
+      -PVERSION_NAME=1.1.0
       -x test
       --no-daemon
       --no-configuration-cache
