@@ -1,11 +1,17 @@
-jdk:
-  - openjdk21
+# JitPack's `jdk: openjdk21` alias resolves to the SDKMAN candidate
+# `21.0.0.0+35-open`, which is no longer hosted on the mirror ("Download has
+# failed, aborting!"). JitPack still exports JAVA_HOME pointing at that
+# never-created directory, so Gradle dies with "JAVA_HOME is set to an invalid
+# directory". Instead we install a JDK 21 SDKMAN actually hosts (Temurin) and
+# point JAVA_HOME at it ourselves.
 
 before_install:
+  - source "$HOME/.sdkman/bin/sdkman-init.sh" && sdk install java 21.0.12+1.1-tem
   - chmod +x gradlew
 
 install:
-  - ./gradlew :epctagcoder:publishToMavenLocal
+  - export JAVA_HOME="$HOME/.sdkman/candidates/java/21.0.12+1.1-tem"
+      && ./gradlew :epctagcoder:publishToMavenLocal
       :cslibrary4a:publishToMavenLocal
       :csl-rfid-android-sdk:publishToMavenLocal
       -PVERSION_NAME=1.1.0
